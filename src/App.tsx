@@ -112,7 +112,7 @@ const HeroSection = () => (
         >
           <div className="inline-flex items-center gap-2 bg-brand-accent/10 border border-brand-accent/20 px-3 py-1 rounded-full text-brand-accent text-sm font-bold mb-6">
             <Zap className="w-4 h-4" />
-            <span>Dành riêng cho Developer, Tester, BrSE</span>
+            <span>Dành riêng cho Developer, Tester, PM</span>
           </div>
           <h1 className="text-4xl md:text-6xl font-extrabold text-white leading-tight mb-6">
             Đập tan rào cản tiếng Anh - <span className="text-brand-accent">Tự tin</span> làm việc trong môi trường Global
