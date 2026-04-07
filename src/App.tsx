@@ -22,8 +22,66 @@ import {
   Calendar,
   Monitor,
   ShieldCheck,
-  Award
+  Award,
+  AlertCircle
 } from 'lucide-react';
+
+// Firebase imports
+import { db, auth } from './firebase';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+
+// --- Error Handling ---
+
+enum OperationType {
+  CREATE = 'create',
+  UPDATE = 'update',
+  DELETE = 'delete',
+  LIST = 'list',
+  GET = 'get',
+  WRITE = 'write',
+}
+
+interface FirestoreErrorInfo {
+  error: string;
+  operationType: OperationType;
+  path: string | null;
+  authInfo: {
+    userId: string | undefined;
+    email: string | null | undefined;
+    emailVerified: boolean | undefined;
+    isAnonymous: boolean | undefined;
+    tenantId: string | null | undefined;
+    providerInfo: {
+      providerId: string;
+      displayName: string | null;
+      email: string | null;
+      photoUrl: string | null;
+    }[];
+  }
+}
+
+function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+  const errInfo: FirestoreErrorInfo = {
+    error: error instanceof Error ? error.message : String(error),
+    authInfo: {
+      userId: auth.currentUser?.uid,
+      email: auth.currentUser?.email,
+      emailVerified: auth.currentUser?.emailVerified,
+      isAnonymous: auth.currentUser?.isAnonymous,
+      tenantId: auth.currentUser?.tenantId,
+      providerInfo: auth.currentUser?.providerData.map(provider => ({
+        providerId: provider.providerId,
+        displayName: provider.displayName,
+        email: provider.email,
+        photoUrl: provider.photoURL
+      })) || []
+    },
+    operationType,
+    path
+  }
+  console.error('Firestore Error: ', JSON.stringify(errInfo));
+  throw new Error(JSON.stringify(errInfo));
+}
 
 // --- Components ---
 
@@ -112,7 +170,7 @@ const HeroSection = () => (
         >
           <div className="inline-flex items-center gap-2 bg-brand-accent/10 border border-brand-accent/20 px-3 py-1 rounded-full text-brand-accent text-sm font-bold mb-6">
             <Zap className="w-4 h-4" />
-            <span>Dành riêng cho Developer, Tester, PM</span>
+            <span>Dành riêng cho Developer, Tester, BrSE</span>
           </div>
           <h1 className="text-4xl md:text-6xl font-extrabold text-white leading-tight mb-6">
             Đập tan rào cản tiếng Anh - <span className="text-brand-accent">Tự tin</span> làm việc trong môi trường Global
@@ -430,11 +488,31 @@ const RegistrationSection = () => {
     goal: ''
   });
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    // Simulate API call
-    setTimeout(() => setIsSubmitted(true), 800);
+    setIsSubmitting(true);
+    setError(null);
+
+    const path = 'registrations';
+    try {
+      await addDoc(collection(db, path), {
+        ...formState,
+        createdAt: serverTimestamp(),
+      });
+      setIsSubmitted(true);
+    } catch (err) {
+      setError('Đã có lỗi xảy ra. Vui lòng thử lại sau.');
+      try {
+        handleFirestoreError(err, OperationType.CREATE, path);
+      } catch (e) {
+        // Error already logged by handleFirestoreError
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -562,11 +640,27 @@ const RegistrationSection = () => {
                         onChange={(e) => setFormState({...formState, goal: e.target.value})}
                       ></textarea>
                     </div>
+
+                    {error && (
+                      <div className="flex items-center gap-2 p-4 bg-red-50 text-red-600 rounded-xl border border-red-100 text-sm">
+                        <AlertCircle className="w-5 h-5 shrink-0" />
+                        <p>{error}</p>
+                      </div>
+                    )}
+
                     <button 
                       type="submit"
-                      className="w-full bg-brand-accent hover:bg-brand-accent-hover text-brand-dark py-4 rounded-xl text-lg font-bold transition-all shadow-xl shadow-brand-accent/20 mt-4"
+                      disabled={isSubmitting}
+                      className={`w-full bg-brand-accent hover:bg-brand-accent-hover text-brand-dark py-4 rounded-xl text-lg font-bold transition-all shadow-xl shadow-brand-accent/20 mt-4 flex items-center justify-center gap-2 ${isSubmitting ? 'opacity-70 cursor-not-allowed' : ''}`}
                     >
-                      Đăng ký ngay
+                      {isSubmitting ? (
+                        <>
+                          <div className="w-5 h-5 border-2 border-brand-dark/30 border-t-brand-dark rounded-full animate-spin"></div>
+                          Đang gửi...
+                        </>
+                      ) : (
+                        'Đăng ký ngay'
+                      )}
                     </button>
                     <p className="text-center text-xs text-slate-400 mt-4">
                       Bằng cách đăng ký, bạn đồng ý với chính sách bảo mật của chúng tôi.

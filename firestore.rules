@@ -1,0 +1,70 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: registrations
+    // Document ID: auto-generated
+    // Fields:
+    //   - name: string (required, 1-100 chars)
+    //   - phone: string (required, 1-20 chars)
+    //   - email: string (required, valid email format)
+    //   - role: string (required, enum: ['dev', 'tester', 'brse', 'pm', 'other'])
+    //   - goal: string (optional, max 1000 chars)
+    //   - createdAt: timestamp (required)
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && 
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+         (request.auth.token.email == "hieppham.detectcoffee@gmail.com" && request.auth.token.email_verified == true));
+    }
+
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function isValidRegistration(data) {
+      let requiredFields = ['name', 'phone', 'email', 'role', 'createdAt'];
+      let allowedFields = ['name', 'phone', 'email', 'role', 'goal', 'createdAt'];
+      let roles = ['dev', 'tester', 'brse', 'pm', 'other'];
+
+      return data.keys().hasAll(requiredFields) &&
+             data.keys().hasOnly(allowedFields) &&
+             data.name is string && data.name.size() >= 1 && data.name.size() <= 100 &&
+             data.phone is string && data.phone.size() >= 1 && data.phone.size() <= 20 &&
+             isValidEmail(data.email) &&
+             data.role in roles &&
+             (!('goal' in data) || (data.goal is string && data.goal.size() <= 1000)) &&
+             data.createdAt is timestamp;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /registrations/{registrationId} {
+      // Allow anyone to register for the course
+      allow create: if isValidRegistration(request.resource.data);
+      
+      // Only admins can read, update, or delete registrations
+      allow read, update, delete: if isAdmin();
+    }
+
+    match /users/{userId} {
+      allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+      allow write: if isAdmin();
+    }
+  }
+}
