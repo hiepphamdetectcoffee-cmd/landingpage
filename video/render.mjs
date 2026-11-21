@@ -53,7 +53,7 @@ if (snap) {
 const silent = path.join(outDir, `.${name}-silent.mp4`);
 const ff = spawn('ffmpeg', [
   '-y', '-loglevel', 'error', '-f', 'image2pipe', '-framerate', String(fps), '-c:v', 'mjpeg', '-i', '-',
-  '-c:v', 'libx264', '-preset', 'slow', '-crf', '22', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', silent,
+  '-c:v', 'libx264', '-profile:v', 'main', '-level', '4.0', '-preset', 'slow', '-crf', '22', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', silent,
 ], { stdio: ['pipe', 'inherit', 'inherit'] });
 
 const frames = Math.round(total * fps);
