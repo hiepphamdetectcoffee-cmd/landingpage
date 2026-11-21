@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<title>Ms Van English · Video quảng cáo dọc</title>
+<!--
+  Video quảng cáo dọc 9:16 (1080x1920, ~31s) cho TikTok / Reels / Shorts.
+  Nhịp 120 BPM (1 phách = 0.5s): các cú cắt cảnh rơi đúng phách.
+  Ảnh màn hình thật trong ./shots (chụp từ tài khoản học sinh thử).
+  Xem trước: mở file trong trình duyệt, thêm ?t=10 để dừng ở giây 10.
+  Xuất video: node video/render.mjs --src video/ad/ad.html --name msvan-ad-9x16 --w 1080 --h 1920
+-->
+<link rel="stylesheet" href="../../node_modules/@fontsource/be-vietnam-pro/500.css" />
+<link rel="stylesheet" href="../../node_modules/@fontsource/be-vietnam-pro/700.css" />
+<link rel="stylesheet" href="../../node_modules/@fontsource/be-vietnam-pro/800.css" />
+<style>
+  :root {
+    --ink:#1c1b22; --frame:#1c1b22; --frame2:#2a2933; --lav:#c9c7f6; --primary:#8f88ec; --pink:#2f27a8;
+    --psoft:#e8e6fc; --peach:#f6a46e; --peachsoft:#fde6d6; --peachink:#5a2a0c; --muted:#66657a;
+    --pop: cubic-bezier(.3,1.7,.5,1); --ease: cubic-bezier(.2,.8,.2,1);
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  html,body { width:1080px; height:1920px; overflow:hidden; background:var(--frame); }
+  body { font-family:"Be Vietnam Pro",system-ui,sans-serif; color:var(--ink); -webkit-font-smoothing:antialiased; }
+  #stage { position:relative; width:1080px; height:1920px; overflow:hidden; }
+
+  /* scenes: hard cut on the beat + punch-in zoom */
+  .scene { position:absolute; inset:0; visibility:hidden;
+    animation: show 0s linear var(--s) both, hide 0s linear var(--e) forwards, punch .45s var(--ease) var(--s) both; }
+  @keyframes show { to { visibility:visible; } }
+  @keyframes hide { to { visibility:hidden; } }
+  @keyframes punch { from { transform:scale(1.12); filter:blur(6px); } to { transform:none; filter:none; } }
+
+  .up   { animation: up .55s var(--ease) var(--d) both; }
+  .pop  { animation: pop .5s var(--pop) var(--d) both; }
+  .slam { animation: slam .35s var(--pop) var(--d) both; }
+  .fade { animation: fade .4s ease var(--d) both; }
+  @keyframes up   { from { opacity:0; transform:translateY(80px); } to { opacity:1; transform:none; } }
+  @keyframes pop  { from { opacity:0; transform:scale(.3) rotate(-8deg); } to { opacity:1; transform:none; } }
+  @keyframes slam { from { opacity:0; transform:scale(2.2); } to { opacity:1; transform:none; } }
+  @keyframes fade { from { opacity:0; } to { opacity:1; } }
+  .wiggle { animation: wig 1s ease-in-out infinite; }
+  @keyframes wig { 0%,100% { transform:rotate(-4deg); } 50% { transform:rotate(4deg) scale(1.06); } }
+  .bob { animation: bob 2s ease-in-out infinite alternate; }
+  @keyframes bob { from { transform:translateY(0); } to { transform:translateY(-16px); } }
+
+  /* captions (TikTok style) */
+  .cap { font-weight:800; letter-spacing:-.02em; line-height:1.05; text-align:center; }
+  .hl  { display:inline-block; background:var(--peach); color:var(--peachink); padding:0 22px 8px; border-radius:22px; transform:rotate(-2deg); }
+  .hl2 { display:inline-block; background:var(--ink); color:#fff; padding:0 22px 8px; border-radius:22px; transform:rotate(2deg); }
+  .sticker { display:inline-flex; align-items:center; gap:14px; padding:20px 34px; border-radius:999px; font-size:42px; font-weight:800; background:#fff; color:var(--ink); box-shadow:0 18px 40px rgba(0,0,0,.18); }
+
+  /* phone with scrolling real screenshot */
+  .phone { position:absolute; left:50%; width:760px; height:1300px; margin-left:-380px; background:#111; border-radius:96px; padding:22px; box-shadow:0 60px 120px rgba(28,27,34,.45); }
+  .phone .screen { position:relative; width:100%; height:100%; border-radius:76px; overflow:hidden; background:#f3f2f8; }
+  .phone .screen img { position:absolute; left:0; top:0; width:100%; animation: scroll var(--dur) cubic-bezier(.45,0,.25,1) var(--d) both; }
+  @keyframes scroll { from { transform:translateY(0); } to { transform:translateY(var(--dist)); } }
+  .phone .notch { position:absolute; top:22px; left:50%; width:220px; height:44px; margin-left:-110px; background:#111; border-radius:0 0 28px 28px; z-index:2; }
+
+  /* story progress bar */
+  #bar { position:absolute; left:40px; right:40px; top:40px; height:10px; border-radius:9px; background:rgba(255,255,255,.35); z-index:50; overflow:hidden; }
+  #bar i { display:block; height:100%; background:#fff; transform-origin:left; animation: barGrow var(--total) linear 0s both; }
+  @keyframes barGrow { from { transform:scaleX(0); } to { transform:scaleX(1); } }
+
+  .count { font-variant-numeric: tabular-nums; }
+  .rec { width:30px; height:30px; border-radius:50%; background:#ff4b4b; display:inline-block; animation: rec 1s steps(2) infinite; }
+  @keyframes rec { 50% { opacity:.2; } }
+  .flash { position:absolute; inset:0; background:#fff; z-index:40; opacity:0; animation: flash .25s ease-out var(--d) both; pointer-events:none; }
+  @keyframes flash { 0% { opacity:.9; } 100% { opacity:0; } }
+</style>
+</head>
+<body>
+<div id="stage" style="--total:31s">
+  <div id="bar"><i></i></div>
+
+  <!-- ============ 1. HOOK (0 – 3s) ============ -->
+  <section class="scene" style="--s:0s; --e:3s; background:var(--lav);">
+    <div style="position:absolute; left:0; right:0; top:520px;">
+      <p class="cap slam" style="--d:.1s; font-size:120px;">POV:</p>
+      <p class="cap up" style="--d:.5s; font-size:130px; margin-top:30px;">con tự học</p>
+      <p class="cap pop" style="--d:1.0s; font-size:150px; margin-top:20px;"><span class="hl">tiếng Anh</span></p>
+      <p class="cap up" style="--d:1.5s; font-size:96px; margin-top:44px;">mà mẹ không</p>
+      <p class="cap up" style="--d:1.75s; font-size:96px;">phải nhắc</p>
+      <p class="pop" style="--d:2.2s; text-align:center; margin-top:50px;"><span class="wiggle" style="display:inline-block; font-size:170px;">😮</span></p>
+    </div>
+  </section>
+
+  <!-- ============ 2. DASHBOARD (3 – 7s) ============ -->
+  <section class="scene" style="--s:3s; --e:7s; background:var(--peachsoft);">
+    <p class="cap up" style="--d:3.05s; position:absolute; left:0; right:0; top:110px; font-size:84px;">Mở web là biết</p>
+    <p class="cap up" style="--d:3.3s; position:absolute; left:0; right:0; top:215px; font-size:96px;"><span class="hl2">Hôm nay học gì?</span></p>
+    <div class="phone up" style="--d:3.2s; top:430px;"><div class="notch"></div><div class="screen">
+      <img src="shots/dashboard.jpg" style="--d:4.0s; --dur:2.6s; --dist:-1150px" alt="" />
+    </div></div>
+    <span class="sticker pop" style="--d:4.2s; position:absolute; left:40px; top:820px; transform:rotate(-6deg)">📌 Bài cô giao</span>
+    <span class="sticker pop" style="--d:4.7s; position:absolute; right:30px; top:1120px;">🧭 Lộ trình AI riêng</span>
+    <span class="sticker pop" style="--d:5.2s; position:absolute; left:60px; top:1480px;">📊 Phân tích điểm yếu</span>
+  </section>
+
+  <!-- ============ 3. COUNTERS (7 – 12s) ============ -->
+  <section class="scene" style="--s:7s; --e:12s; background:var(--frame); color:#fff;">
+    <p class="cap up" style="--d:7.05s; position:absolute; left:0; right:0; top:150px; font-size:76px; color:var(--lav)">Cả kho luyện thi</p>
+    <p class="cap up" style="--d:7.25s; position:absolute; left:0; right:0; top:250px; font-size:76px;">trong <span class="hl">1 tài khoản</span></p>
+    <div style="position:absolute; left:70px; right:70px; top:470px; display:grid; grid-template-columns:1fr 1fr; gap:34px;">
+      <div class="pop" style="--d:7.5s; background:var(--primary); color:var(--frame); border-radius:48px; padding:40px 44px; height:330px;">
+        <p class="count" data-count="195" data-start="7.5" data-dur="0.9" style="font-size:150px; font-weight:800; line-height:1">0</p>
+        <p style="font-size:44px; font-weight:800; margin-top:20px">đề TOEIC</p></div>
+      <div class="pop" style="--d:8.0s; background:var(--peach); color:var(--peachink); border-radius:48px; padding:40px 44px; height:330px;">
+        <p class="count" data-count="94" data-start="8.0" data-dur="0.9" style="font-size:150px; font-weight:800; line-height:1">0</p>
+        <p style="font-size:44px; font-weight:800; margin-top:20px">bộ IELTS 4 kỹ năng</p></div>
+      <div class="pop" style="--d:8.5s; background:var(--lav); color:var(--frame); border-radius:48px; padding:40px 44px; height:330px;">
+        <p class="count" data-count="68" data-start="8.5" data-dur="0.9" style="font-size:150px; font-weight:800; line-height:1">0</p>
+        <p style="font-size:44px; font-weight:800; margin-top:20px">đề THPT</p></div>
+      <div class="pop" style="--d:9.0s; background:#fff; color:var(--frame); border-radius:48px; padding:40px 44px; height:330px;">
+        <p class="count" data-count="40" data-start="9.0" data-dur="0.9" style="font-size:150px; font-weight:800; line-height:1">0</p>
+        <p style="font-size:44px; font-weight:800; margin-top:20px">đề vào lớp 10</p></div>
+      <div class="pop" style="--d:9.5s; background:var(--frame2); border:3px solid #3a3944; border-radius:48px; padding:40px 44px; height:330px;">
+        <p class="count" data-count="182" data-start="9.5" data-dur="0.9" style="font-size:150px; font-weight:800; line-height:1">0</p>
+        <p style="font-size:44px; font-weight:800; margin-top:20px">đề theo lớp 6–9</p></div>
+      <div class="pop" style="--d:10.0s; background:var(--frame2); border:3px solid #3a3944; border-radius:48px; padding:40px 44px; height:330px;">
+        <p class="count" data-count="490" data-start="10.0" data-dur="0.9" style="font-size:150px; font-weight:800; line-height:1">0</p>
+        <p style="font-size:44px; font-weight:800; margin-top:20px">truyện tiếng Anh</p></div>
+    </div>
+    <p class="cap up" style="--d:10.6s; position:absolute; left:0; right:0; bottom:150px; font-size:52px; color:var(--lav)">+ đề HSG · chấm điểm ngay khi nộp ⚡</p>
+  </section>
+
+  <!-- ============ 4. GAME (12 – 16s) ============ -->
+  <section class="scene" style="--s:12s; --e:16s; background:var(--primary);">
+    <p class="cap up" style="--d:12.05s; position:absolute; left:0; right:0; top:110px; font-size:84px; color:#fff">Học một chút</p>
+    <p class="cap pop" style="--d:12.35s; position:absolute; left:0; right:0; top:215px; font-size:96px;"><span class="hl">chơi một lượt 🎮</span></p>
+    <div class="phone up" style="--d:12.2s; top:440px;"><div class="notch"></div><div class="screen">
+      <img src="shots/game.jpg" style="--d:13.0s; --dur:2.6s; --dist:-1150px" alt="" />
+    </div></div>
+    <span class="sticker pop" style="--d:13.2s; position:absolute; right:24px; top:760px; transform:rotate(5deg)">⚡ Ghép cặp tốc độ</span>
+    <span class="sticker pop" style="--d:13.7s; position:absolute; left:24px; top:1060px; transform:rotate(-4deg)">🏰 Gõ chữ giữ thành</span>
+    <span class="sticker pop" style="--d:14.2s; position:absolute; right:40px; top:1360px;">🐸 Ếch bắt ruồi</span>
+    <span class="sticker pop" style="--d:14.7s; position:absolute; left:50px; top:1620px; transform:rotate(3deg)">🌱 Vườn từ của bạn</span>
+  </section>
+
+  <!-- ============ 5. AI SPEAKING (16 – 20s) ============ -->
+  <section class="scene" style="--s:16s; --e:20s; background:#0f3d2e; color:#fff;">
+    <p class="cap up" style="--d:16.05s; position:absolute; left:0; right:0; top:110px; font-size:84px;">Ngại nói tiếng Anh?</p>
+    <p class="cap pop" style="--d:16.35s; position:absolute; left:0; right:0; top:215px; font-size:96px;"><span class="hl">Nói với AI 🎙️</span></p>
+    <div class="phone up" style="--d:16.2s; top:440px;"><div class="notch"></div><div class="screen">
+      <img src="shots/bloom.jpg" style="--d:17.0s; --dur:2.4s; --dist:-900px" alt="" />
+    </div></div>
+    <div style="position:absolute; left:0; right:0; top:1600px; display:flex; justify-content:center; gap:22px;">
+      <span class="sticker pop" style="--d:17.2s; font-size:38px; padding:18px 28px">🌸 Maya</span>
+      <span class="sticker pop" style="--d:17.5s; font-size:38px; padding:18px 28px">🧠 Alex</span>
+      <span class="sticker pop" style="--d:17.8s; font-size:38px; padding:18px 28px">🎯 Sam</span>
+      <span class="sticker pop" style="--d:18.1s; font-size:38px; padding:18px 28px">😄 Milo</span>
+    </div>
+    <p class="cap up" style="--d:18.5s; position:absolute; left:0; right:0; top:1760px; font-size:44px; color:#b8f5c8">Trò chuyện · tranh biện · A1 → C1</p>
+  </section>
+
+  <!-- ============ 6. STORIES (20 – 23.5s) ============ -->
+  <section class="scene" style="--s:20s; --e:23.5s; background:var(--lav);">
+    <p class="cap up" style="--d:20.05s; position:absolute; left:0; right:0; top:110px; font-size:84px;">Đọc truyện</p>
+    <p class="cap pop" style="--d:20.35s; position:absolute; left:0; right:0; top:215px; font-size:96px;"><span class="hl2">có giọng đọc 🔊</span></p>
+    <div class="phone up" style="--d:20.2s; top:440px;"><div class="notch"></div><div class="screen">
+      <img src="shots/truyen.jpg" style="--d:21.0s; --dur:2.2s; --dist:-300px" alt="" />
+    </div></div>
+    <span class="sticker pop" style="--d:21.2s; position:absolute; left:30px; top:900px; transform:rotate(-5deg)">🚀 Vũ trụ</span>
+    <span class="sticker pop" style="--d:21.5s; position:absolute; right:30px; top:1150px; transform:rotate(4deg)">🐯 Động vật</span>
+    <span class="sticker pop" style="--d:21.8s; position:absolute; left:40px; top:1450px;">🔬 Khoa học</span>
+  </section>
+
+  <!-- ============ 7. REAL EXAM (23.5 – 27s) ============ -->
+  <section class="scene" style="--s:23.5s; --e:27s; background:var(--frame); color:#fff;">
+    <p class="up" style="--d:23.55s; position:absolute; left:0; right:0; top:150px; text-align:center; font-size:46px; font-weight:800; letter-spacing:.1em; color:#ff8a80"><span class="rec"></span>&nbsp; THI THẬT</p>
+    <p class="cap slam" style="--d:23.8s; position:absolute; left:0; right:0; top:260px; font-size:120px;">Có giám thị AI</p>
+    <p class="cap pop" style="--d:24.1s; position:absolute; left:0; right:0; top:400px; font-size:150px;">👀</p>
+    <!-- camera frame -->
+    <div class="up" style="--d:24.2s; position:absolute; left:190px; top:640px; width:700px; height:560px; border-radius:48px; background:linear-gradient(160deg,#3a3944,#24232b); overflow:hidden;">
+      <svg viewBox="0 0 700 560" width="700" height="560" style="position:absolute; inset:0">
+        <circle cx="350" cy="250" r="110" fill="#8f88ec" opacity=".9"/>
+        <path d="M120 560c20-130 120-190 230-190s210 60 230 190z" fill="#8f88ec" opacity=".9"/>
+        <rect x="215" y="110" width="270" height="290" rx="30" fill="none" stroke="#3ddc84" stroke-width="8"/>
+      </svg>
+      <div style="position:absolute; left:30px; top:26px; font-size:30px; font-weight:800; color:#3ddc84">● AI đang theo dõi</div>
+    </div>
+    <div style="position:absolute; left:60px; right:60px; top:1270px; display:grid; gap:22px; justify-items:center">
+      <span class="sticker pop" style="--d:24.8s; background:#fdecea; color:#b42318">🚫 Có điện thoại</span>
+      <span class="sticker pop" style="--d:25.2s; background:#fdecea; color:#b42318">👥 Có thêm người</span>
+      <span class="sticker pop" style="--d:25.6s; background:#fdecea; color:#b42318">↗️ Nhìn ra ngoài lâu</span>
+    </div>
+    <p class="cap up" style="--d:26s; position:absolute; left:0; right:0; bottom:110px; font-size:46px; color:var(--lav)">Thi nghiêm túc như trong phòng thi</p>
+  </section>
+
+  <!-- ============ 8. CTA (27 – 31s) ============ -->
+  <section class="scene" style="--s:27s; --e:31.5s; background:var(--lav);">
+    <div class="flash" style="--d:27s"></div>
+    <div style="position:absolute; left:0; right:0; top:330px; text-align:center">
+      <span class="pop" style="--d:27.1s; display:inline-grid; place-items:center; width:220px; height:220px; border-radius:60px; background:var(--peach); color:var(--peachink); font-size:150px; font-weight:800">V</span>
+      <p class="cap up" style="--d:27.4s; font-size:120px; margin-top:60px;">Học cùng</p>
+      <p class="cap up" style="--d:27.65s; font-size:130px;"><span class="hl2">Ms Van</span></p>
+      <p class="cap up" style="--d:28.1s; font-size:52px; font-weight:700; margin-top:60px; color:#3d3c4a">Trên lớp học cùng cô · về nhà luyện tiếp</p>
+      <div class="pop bob" style="--d:28.6s; display:inline-block; margin-top:90px; background:var(--frame); color:#fff; font-size:76px; font-weight:800; padding:36px 70px; border-radius:999px;">msvanhomework.site</div>
+      <p class="cap up" style="--d:29.2s; font-size:54px; margin-top:70px;">💬 Nhắn cô để nhận tài khoản</p>
+    </div>
+  </section>
+</div>
+<script>
+  const q = new URLSearchParams(location.search);
+  window.TOTAL = 31;
+  const counters = [...document.querySelectorAll('[data-count]')];
+  const ease = (x) => 1 - Math.pow(1 - x, 3);
+  let seeking = false;
+  window.seek = (sec) => {
+    seeking = true;
+    document.getAnimations().forEach(a => { a.pause(); a.currentTime = sec * 1000; });
+    counters.forEach(el => {
+      const p = Math.min(1, Math.max(0, (sec - +el.dataset.start) / +el.dataset.dur));
+      el.textContent = Math.round(ease(p) * +el.dataset.count);
+    });
+  };
+  if (q.has('t')) document.fonts.ready.then(() => seek(parseFloat(q.get('t'))));
+  else { const t0 = performance.now(); const tick = () => { if (seeking) return; const s = (performance.now() - t0) / 1000; counters.forEach(el => { const p = Math.min(1, Math.max(0, (s - +el.dataset.start) / +el.dataset.dur)); el.textContent = Math.round(ease(p) * +el.dataset.count); }); if (!seeking && s < TOTAL) requestAnimationFrame(tick); }; tick(); }
+</script>
+</body>
+</html>

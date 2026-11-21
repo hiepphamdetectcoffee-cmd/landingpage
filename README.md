@@ -36,3 +36,16 @@ node video/render.mjs       # render ra public/video/
 | 38–45s | Phụ huynh & giáo viên, thông báo Zalo |
 | 45–48s | Tài khoản riêng, an toàn dữ liệu |
 | 48–53s | Kêu gọi: msvanhomework.site |
+
+## Video quảng cáo dọc 9:16 (TikTok / Reels / Shorts)
+
+- File xuất: `public/video/msvan-ad-9x16.mp4` (1080×1920, 31 giây, nhạc 120 BPM tự tổng hợp) và ảnh bìa `public/video/msvan-ad-9x16-poster.jpg`.
+- Kịch bản: `video/ad/ad.html`. Dùng ảnh màn hình thật trong `video/ad/shots/` (chụp từ tài khoản học sinh thử, gói Pro).
+- Xuất lại:
+
+```bash
+python3 video/ad/music.py
+node video/render.mjs --src video/ad/ad.html --name msvan-ad-9x16 --w 1080 --h 1920 --poster 1.2 --music video/ad/music.wav
+```
+
+- Prompt và kịch bản cho Higgsfield: `video/ad/higgsfield-prompts.md`.

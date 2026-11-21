@@ -449,13 +449,22 @@ const FEATURES = [
   { icon: ClipboardCheck, title: 'Bài cô giao', desc: 'Làm bài tập về nhà ngay trên web, nộp bài và nhận kết quả, nhận xét của cô.' },
   { icon: LineChart, title: 'Luyện thi TOEIC', desc: 'Làm đề có chấm điểm, lưu tiến độ giữa chừng và xem lại từng phần sau khi nộp.' },
   { icon: GraduationCap, title: 'Luyện thi IELTS', desc: 'Luyện từng kỹ năng theo thời gian gợi ý. Bản nháp lưu trên máy chủ, làm tiếp trên thiết bị khác.' },
-  { icon: FileText, title: 'Kho đề phong phú', desc: 'Đề THPT, đề vào 10, đề theo lớp, đề học sinh giỏi và đề trắc nghiệm do giáo viên chuẩn bị.' },
-  { icon: Mic, title: 'Luyện nói với AI', desc: 'Trò chuyện, luyện phát âm và phản xạ bất cứ lúc nào. Giáo viên xem lại được lịch sử luyện nói.' },
-  { icon: BookOpen, title: 'Truyện tranh có giọng đọc', desc: 'Đọc truyện kèm giọng đọc chuẩn, vừa nghe vừa học từ mới theo ngữ cảnh.' },
-  { icon: Gamepad2, title: 'Trò chơi từ vựng', desc: 'Học mà chơi, chơi mà học. Ôn từ vựng nhẹ nhàng để các con nhớ lâu hơn.' },
-  { icon: BookMarked, title: 'Sổ từ của tôi', desc: 'Lưu lại những từ mới của riêng mình để ôn tập bất cứ lúc nào.' },
-  { icon: CalendarCheck, title: 'Điểm danh & lịch sử học', desc: 'Theo dõi chuyên cần và toàn bộ quá trình học của từng bạn theo lộ trình.' },
-  { icon: MessageCircle, title: 'Kết nối Zalo', desc: 'Giáo viên kết nối Zalo để thông tin học tập đến với phụ huynh nhanh hơn.' },
+  { icon: FileText, title: 'Kho đề phong phú', desc: 'Đề THPT theo tỉnh, đề vào 10, đề theo sách Global Success lớp 6–9, đề HSG. Câu viết có AI chấm nháp, cô duyệt lại.' },
+  { icon: Mic, title: 'Luyện nói với AI', desc: 'Trò chuyện hoặc tranh biện với 4 bạn AI (Maya, Alex, Sam, Milo), trình độ từ A1 đến C1. Cô xem lại được lịch sử luyện nói.' },
+  { icon: BookOpen, title: 'Truyện có giọng đọc', desc: 'Gần 500 truyện và sách khám phá (vũ trụ, động vật, khoa học…) từ A1 đến B2, có chế độ tự đọc và câu hỏi cuối sách.' },
+  { icon: Gamepad2, title: 'Khu trò chơi', desc: 'Ghép cặp tốc độ, Gõ chữ giữ thành, Bóng bay nghĩa, Ếch bắt ruồi… Vườn từ nhắc ôn đúng chỗ yếu, có đếm chuỗi ngày học liên tiếp.' },
+  { icon: Play, title: 'Video song ngữ', desc: 'Video có phụ đề song ngữ, bấm từng câu để nghe lại và ghi âm giọng mình để luyện nói theo.' },
+  { icon: Sparkles, title: 'Lộ trình học bằng AI', desc: 'Trả lời vài câu hỏi và làm bài test nhanh 10 phút, AI xếp cho con mỗi ngày làm bài nào và nhắc qua Zalo.' },
+  { icon: BookMarked, title: 'Tra từ & sổ từ', desc: 'Bôi đen từ trong đề để tra nghĩa và lưu vào sổ từ. Có gợi ý AI khi làm bài và phân tích chủ điểm còn yếu.' },
+];
+
+const STATS = [
+  { n: '195', l: 'đề TOEIC full test' },
+  { n: '94', l: 'bộ IELTS 4 kỹ năng' },
+  { n: '68', l: 'đề THPT' },
+  { n: '40', l: 'đề thi thử vào 10' },
+  { n: '182', l: 'đề theo lớp 6–9' },
+  { n: '~500', l: 'truyện tiếng Anh' },
 ];
 
 const FeaturesSection = () => (
@@ -469,6 +478,16 @@ const FeaturesSection = () => (
           vựng và luyện đề.
         </p>
       </motion.div>
+
+      <motion.dl {...fadeUp} className="mb-10 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+        {STATS.map((st) => (
+          <div key={st.l} className="rounded-3xl bg-frame p-5 text-white">
+            <dt className="sr-only">{st.l}</dt>
+            <dd className="text-4xl font-extrabold text-lav">{st.n}</dd>
+            <dd className="mt-1 text-sm text-white/75">{st.l}</dd>
+          </div>
+        ))}
+      </motion.dl>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         {FEATURES.map((f, i) => (

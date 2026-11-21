@@ -1,5 +1,7 @@
-// Render video/intro.html to public/video/msvan-intro.mp4 (+ poster JPG).
-// Usage: node video/render.mjs [--fps 30] [--snap 1,6,14]   (needs ffmpeg + playwright)
+// Render an HTML scene file to public/video/<name>.mp4 (+ poster JPG). Needs ffmpeg + Playwright.
+// Intro (16:9): node video/render.mjs
+// Ad (9:16):    node video/render.mjs --src video/ad/ad.html --name msvan-ad-9x16 --w 1080 --h 1920 --poster 1.2 --music video/ad/music.wav
+// Snapshots:    add --snap 1,6,14 [--out dir]
 import { spawn, execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync } from 'node:fs';
 import path from 'node:path';
@@ -19,11 +21,16 @@ const arg = (name, def) => {
   return i > -1 ? process.argv[i + 1] : def;
 };
 const fps = Number(arg('fps', 30));
+const src = path.resolve(root, arg('src', 'video/intro.html'));
+const name = arg('name', 'msvan-intro');
+const W = Number(arg('w', 1920)), H = Number(arg('h', 1080));
+const posterAt = Number(arg('poster', 9.5));
+const music = path.resolve(root, arg('music', 'video/music.wav'));
 const snap = arg('snap', null);
 
 const browser = await chromium.launch();
-const page = await browser.newPage({ viewport: { width: 1920, height: 1080 }, deviceScaleFactor: 1 });
-await page.goto(pathToFileURL(path.join(here, 'intro.html')).href);
+const page = await browser.newPage({ viewport: { width: W, height: H }, deviceScaleFactor: 1 });
+await page.goto(pathToFileURL(src).href);
 await page.evaluate(() => document.fonts.ready);
 const total = await page.evaluate(() => window.TOTAL);
 
@@ -43,7 +50,7 @@ if (snap) {
   process.exit(0);
 }
 
-const silent = path.join(outDir, '.intro-silent.mp4');
+const silent = path.join(outDir, `.${name}-silent.mp4`);
 const ff = spawn('ffmpeg', [
   '-y', '-loglevel', 'error', '-f', 'image2pipe', '-framerate', String(fps), '-c:v', 'mjpeg', '-i', '-',
   '-c:v', 'libx264', '-preset', 'slow', '-crf', '22', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', silent,
@@ -59,13 +66,12 @@ ff.stdin.end();
 await new Promise((r, j) => ff.on('close', (c) => (c === 0 ? r() : j(new Error(`ffmpeg exit ${c}`)))));
 
 // Poster: the hook scene
-await page.evaluate((s) => window.seek(s), 9.5);
-await page.screenshot({ path: path.join(outDir, 'msvan-intro-poster.jpg'), type: 'jpeg', quality: 85 });
+await page.evaluate((s) => window.seek(s), posterAt);
+await page.screenshot({ path: path.join(outDir, `${name}-poster.jpg`), type: 'jpeg', quality: 85 });
 await browser.close();
 
 // Mux background music if present (generate with: python3 video/music.py)
-const music = path.join(here, 'music.wav');
-const out = path.join(outDir, 'msvan-intro.mp4');
+const out = path.join(outDir, `${name}.mp4`);
 if (existsSync(music)) {
   execFileSync('ffmpeg', ['-y', '-loglevel', 'error', '-i', silent, '-i', music, '-c:v', 'copy', '-c:a', 'aac', '-b:a', '160k',
     '-shortest', '-movflags', '+faststart', out]);

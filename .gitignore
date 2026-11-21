@@ -8,4 +8,5 @@ coverage/
 !.env.example
 video/music.wav
 video/snaps/
-public/video/.intro-silent.mp4
+public/video/.*-silent.mp4
+video/ad/music.wav
