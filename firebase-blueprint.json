@@ -20,7 +20,13 @@
         },
         "role": {
           "type": "string",
-          "enum": ["dev", "tester", "brse", "pm", "other"],
+          "enum": [
+            "dev",
+            "tester",
+            "brse",
+            "pm",
+            "other"
+          ],
           "description": "The job role of the registrant."
         },
         "goal": {
@@ -33,13 +39,66 @@
           "description": "The timestamp when the registration was created."
         }
       },
-      "required": ["name", "phone", "email", "role", "createdAt"]
+      "required": [
+        "name",
+        "phone",
+        "email",
+        "role",
+        "createdAt"
+      ]
+    },
+    "Consultation": {
+      "title": "Consultation",
+      "description": "A consultation request from the Ms Van English landing page.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Full name of the parent or student."
+        },
+        "phone": {
+          "type": "string",
+          "description": "Phone / Zalo number."
+        },
+        "role": {
+          "type": "string",
+          "enum": [
+            "parent",
+            "student",
+            "other"
+          ],
+          "description": "Who is registering."
+        },
+        "grade": {
+          "type": "string",
+          "description": "The student's current grade (optional)."
+        },
+        "goal": {
+          "type": "string",
+          "description": "Learning goal (optional)."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when the request was created."
+        }
+      },
+      "required": [
+        "name",
+        "phone",
+        "role",
+        "createdAt"
+      ]
     }
   },
   "firestore": {
     "/registrations/{registrationId}": {
       "schema": "Registration",
       "description": "Collection of course registrations."
+    },
+    "/consultations/{consultationId}": {
+      "schema": "Consultation",
+      "description": "Consultation requests from the Ms Van English landing page."
     }
   }
 }

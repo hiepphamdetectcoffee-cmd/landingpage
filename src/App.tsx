@@ -1,769 +1,876 @@
-import React, { useState, useEffect, FormEvent } from 'react';
+import React, { useState, useEffect, useRef, FormEvent } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { 
-  CheckCircle2, 
-  MessageCircle, 
-  Users, 
-  Code2, 
-  Terminal, 
-  Briefcase, 
-  ChevronRight, 
-  Star, 
-  Quote, 
-  Clock, 
-  Target, 
-  Zap, 
+import {
   ArrowRight,
+  BookOpen,
+  CalendarCheck,
+  CheckCircle2,
+  ChevronDown,
+  ClipboardCheck,
+  FileText,
+  Gamepad2,
+  GraduationCap,
+  Heart,
+  Library,
+  LineChart,
+  LogIn,
   Menu,
-  X,
-  Phone,
-  Mail,
-  MapPin,
-  Calendar,
-  Monitor,
+  MessageCircle,
+  Mic,
+  Play,
+  Presentation,
+  Quote,
   ShieldCheck,
-  Award,
-  AlertCircle
+  Smartphone,
+  Sparkles,
+  Users,
+  X,
+  AlertCircle,
+  BookMarked,
+  Smile,
 } from 'lucide-react';
 
-// Firebase imports
 import { db, auth } from './firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
-// --- Error Handling ---
+const SITE = 'https://msvanhomework.site';
+const LINKS = {
+  student: `${SITE}/login/student`,
+  parent: `${SITE}/login/parent`,
+  teacher: `${SITE}/login/teacher`,
+  about: `${SITE}/ve-chung-toi`,
+  privacy: `${SITE}/chinh-sach-bao-mat`,
+};
 
-enum OperationType {
-  CREATE = 'create',
-  UPDATE = 'update',
-  DELETE = 'delete',
-  LIST = 'list',
-  GET = 'get',
-  WRITE = 'write',
-}
+const VIDEO_SRC = '/video/msvan-intro.mp4';
+const VIDEO_POSTER = '/video/msvan-intro-poster.jpg';
 
-interface FirestoreErrorInfo {
-  error: string;
-  operationType: OperationType;
-  path: string | null;
-  authInfo: {
-    userId: string | undefined;
-    email: string | null | undefined;
-    emailVerified: boolean | undefined;
-    isAnonymous: boolean | undefined;
-    tenantId: string | null | undefined;
-    providerInfo: {
-      providerId: string;
-      displayName: string | null;
-      email: string | null;
-      photoUrl: string | null;
-    }[];
-  }
-}
+// ---------------------------------------------------------------------------
+// Small building blocks
+// ---------------------------------------------------------------------------
 
-function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
-  const errInfo: FirestoreErrorInfo = {
-    error: error instanceof Error ? error.message : String(error),
-    authInfo: {
-      userId: auth.currentUser?.uid,
-      email: auth.currentUser?.email,
-      emailVerified: auth.currentUser?.emailVerified,
-      isAnonymous: auth.currentUser?.isAnonymous,
-      tenantId: auth.currentUser?.tenantId,
-      providerInfo: auth.currentUser?.providerData.map(provider => ({
-        providerId: provider.providerId,
-        displayName: provider.displayName,
-        email: provider.email,
-        photoUrl: provider.photoURL
-      })) || []
-    },
-    operationType,
-    path
-  }
-  console.error('Firestore Error: ', JSON.stringify(errInfo));
-  throw new Error(JSON.stringify(errInfo));
-}
+const BrandMark = ({ className = '' }: { className?: string }) => (
+  <span
+    aria-hidden="true"
+    className={`inline-grid place-items-center rounded-xl bg-peach text-peach-ink font-extrabold ${className}`}
+  >
+    V
+  </span>
+);
 
-// --- Components ---
+const Eyebrow = ({ children, dark = false }: { children: React.ReactNode; dark?: boolean }) => (
+  <span
+    className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wider ${
+      dark ? 'bg-white/10 text-lav' : 'bg-primary-soft text-primary-ink'
+    }`}
+  >
+    {children}
+  </span>
+);
 
-const Navbar = () => {
-  const [isScrolled, setIsScrolled] = useState(false);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+const fadeUp = {
+  initial: { opacity: 0, y: 24 },
+  whileInView: { opacity: 1, y: 0 },
+  viewport: { once: true, margin: '-60px' },
+  transition: { duration: 0.5 },
+};
+
+// ---------------------------------------------------------------------------
+// Header
+// ---------------------------------------------------------------------------
+
+const NAV = [
+  { href: '#video', label: 'Video' },
+  { href: '#tinh-nang', label: 'Tính năng' },
+  { href: '#lop-hoc', label: 'Lớp học' },
+  { href: '#bat-dau', label: 'Cách bắt đầu' },
+  { href: '#hoi-dap', label: 'Hỏi đáp' },
+];
+
+const Header = () => {
+  const [open, setOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
-    const handleScroll = () => setIsScrolled(window.scrollY > 20);
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    const onScroll = () => setScrolled(window.scrollY > 16);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
   return (
-    <nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${isScrolled ? 'bg-white/90 backdrop-blur-md shadow-sm py-3' : 'bg-transparent py-5'}`}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center">
-        <div className="flex items-center gap-2">
-          <div className="bg-brand-accent p-1.5 rounded-lg">
-            <Terminal className="text-brand-dark w-6 h-6" />
-          </div>
-          <span className={`text-xl font-bold font-display ${isScrolled ? 'text-brand-dark' : 'text-white md:text-brand-dark'}`}>
-            IT <span className="text-brand-accent">English</span> Mastery
-          </span>
-        </div>
+    <header
+      className={`fixed inset-x-0 top-0 z-50 transition-colors ${
+        scrolled ? 'bg-frame/95 backdrop-blur shadow-lg' : 'bg-frame'
+      }`}
+    >
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+        <a href="#top" className="flex items-center gap-2.5 text-lg font-bold text-white">
+          <BrandMark className="h-9 w-9 text-lg" />
+          Ms Van English
+        </a>
 
-        {/* Desktop Menu */}
-        <div className="hidden md:flex items-center gap-8">
-          <a href="#pain-points" className="text-sm font-medium hover:text-brand-accent transition-colors">Vấn đề</a>
-          <a href="#outcomes" className="text-sm font-medium hover:text-brand-accent transition-colors">Kết quả</a>
-          <a href="#curriculum" className="text-sm font-medium hover:text-brand-accent transition-colors">Lộ trình</a>
-          <a href="#testimonials" className="text-sm font-medium hover:text-brand-accent transition-colors">Cảm nhận</a>
-          <a href="#register" className="bg-brand-accent hover:bg-brand-accent-hover text-brand-dark px-5 py-2.5 rounded-full text-sm font-bold transition-all shadow-lg shadow-brand-accent/20">
-            Đăng ký ngay
+        <nav className="hidden items-center gap-1 md:flex" aria-label="Điều hướng chính">
+          {NAV.map((n) => (
+            <a
+              key={n.href}
+              href={n.href}
+              className="rounded-full px-3.5 py-2 text-sm font-medium text-white/75 transition hover:bg-white/10 hover:text-white"
+            >
+              {n.label}
+            </a>
+          ))}
+        </nav>
+
+        <div className="hidden items-center gap-2 md:flex">
+          <a
+            href={LINKS.student}
+            className="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold text-white/85 hover:text-white"
+          >
+            <LogIn className="h-4 w-4" /> Đăng nhập
+          </a>
+          <a
+            href="#dang-ky"
+            className="rounded-full bg-peach px-5 py-2.5 text-sm font-bold text-peach-ink transition hover:brightness-105"
+          >
+            Đăng ký tư vấn
           </a>
         </div>
 
-        {/* Mobile Toggle */}
-        <button className="md:hidden p-2" onClick={() => setIsMenuOpen(!isMenuOpen)}>
-          {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className={`w-6 h-6 ${isScrolled ? 'text-brand-dark' : 'text-white'}`} />}
+        <button
+          className="rounded-lg p-2 text-white md:hidden"
+          onClick={() => setOpen(!open)}
+          aria-label={open ? 'Đóng menu' : 'Mở menu'}
+          aria-expanded={open}
+        >
+          {open ? <X /> : <Menu />}
         </button>
       </div>
 
-      {/* Mobile Menu */}
       <AnimatePresence>
-        {isMenuOpen && (
-          <motion.div 
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="md:hidden bg-white border-b border-slate-100 overflow-hidden"
+        {open && (
+          <motion.nav
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="overflow-hidden border-t border-white/10 bg-frame md:hidden"
+            aria-label="Điều hướng di động"
           >
-            <div className="px-4 py-6 space-y-4 flex flex-col">
-              <a href="#pain-points" onClick={() => setIsMenuOpen(false)} className="text-lg font-medium">Vấn đề</a>
-              <a href="#outcomes" onClick={() => setIsMenuOpen(false)} className="text-lg font-medium">Kết quả</a>
-              <a href="#curriculum" onClick={() => setIsMenuOpen(false)} className="text-lg font-medium">Lộ trình</a>
-              <a href="#testimonials" onClick={() => setIsMenuOpen(false)} className="text-lg font-medium">Cảm nhận</a>
-              <a href="#register" onClick={() => setIsMenuOpen(false)} className="bg-brand-accent text-brand-dark px-6 py-3 rounded-xl text-center font-bold">
-                Đăng ký học thử
-              </a>
+            <div className="space-y-1 px-4 py-4">
+              {NAV.map((n) => (
+                <a
+                  key={n.href}
+                  href={n.href}
+                  onClick={() => setOpen(false)}
+                  className="block rounded-xl px-3 py-3 font-medium text-white/85 hover:bg-white/10"
+                >
+                  {n.label}
+                </a>
+              ))}
+              <div className="grid grid-cols-2 gap-2 pt-3">
+                <a href={LINKS.student} className="rounded-full border border-white/20 py-3 text-center text-sm font-semibold text-white">
+                  Đăng nhập
+                </a>
+                <a
+                  href="#dang-ky"
+                  onClick={() => setOpen(false)}
+                  className="rounded-full bg-peach py-3 text-center text-sm font-bold text-peach-ink"
+                >
+                  Đăng ký tư vấn
+                </a>
+              </div>
             </div>
-          </motion.div>
+          </motion.nav>
         )}
       </AnimatePresence>
-    </nav>
+    </header>
   );
 };
 
-const HeroSection = () => (
-  <section className="relative min-h-screen flex items-center pt-20 overflow-hidden bg-brand-dark">
-    {/* Background Pattern */}
-    <div className="absolute inset-0 opacity-10 pointer-events-none">
-      <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-brand-accent/20 via-transparent to-transparent"></div>
-      <div className="grid grid-cols-12 h-full w-full">
-        {[...Array(12)].map((_, i) => (
-          <div key={i} className="border-r border-white/5 h-full"></div>
-        ))}
+// ---------------------------------------------------------------------------
+// Hero
+// ---------------------------------------------------------------------------
+
+const HeroMockup = () => (
+  <div className="relative mx-auto w-full max-w-md">
+    <div className="absolute -inset-6 -z-10 rounded-[2.5rem] bg-primary/30 blur-2xl" aria-hidden="true" />
+    <div className="rounded-[2rem] bg-frame p-3 shadow-2xl">
+      <div className="rounded-[1.5rem] bg-surface p-5">
+        <div className="mb-4 flex items-center justify-between">
+          <div className="flex items-center gap-2 text-sm font-bold">
+            <BrandMark className="h-7 w-7 text-sm" /> Ms Van
+          </div>
+          <span className="rounded-full bg-primary-soft px-2.5 py-1 text-xs font-semibold text-primary-ink">Tổng quan</span>
+        </div>
+
+        <div className="card mb-3 p-4">
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted">Bài cô giao hôm nay</p>
+          <p className="mt-1 font-bold">Unit 5 · Reading &amp; Vocabulary</p>
+          <div className="mt-3 h-2 rounded-full bg-primary-soft">
+            <div className="h-2 w-2/3 rounded-full bg-primary" />
+          </div>
+          <p className="mt-2 text-xs text-muted">Đã làm 8/12 câu</p>
+        </div>
+
+        <div className="mb-3 grid grid-cols-2 gap-3">
+          <div className="card p-4">
+            <LineChart className="mb-2 h-5 w-5 text-primary-ink" />
+            <p className="text-sm font-bold">Luyện TOEIC</p>
+            <p className="text-xs text-muted">Lưu tiến độ giữa chừng</p>
+          </div>
+          <div className="card p-4">
+            <Mic className="mb-2 h-5 w-5 text-peach-ink" />
+            <p className="text-sm font-bold">Nói với AI</p>
+            <p className="text-xs text-muted">Luyện phát âm, phản xạ</p>
+          </div>
+        </div>
+
+        <div className="flex items-start gap-3 rounded-2xl bg-peach-soft p-4">
+          <MessageCircle className="mt-0.5 h-5 w-5 shrink-0 text-peach-ink" />
+          <div>
+            <p className="text-xs font-semibold text-peach-ink">Nhận xét của cô</p>
+            <p className="text-sm text-peach-ink/90">“Con đọc to và rõ hơn rồi đó! Cố gắng thêm phần từ vựng nhé.”</p>
+          </div>
+        </div>
       </div>
     </div>
 
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full">
-      <div className="grid lg:grid-cols-2 gap-12 items-center">
-        <motion.div
-          initial={{ opacity: 0, x: -30 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.8 }}
-        >
-          <div className="inline-flex items-center gap-2 bg-brand-accent/10 border border-brand-accent/20 px-3 py-1 rounded-full text-brand-accent text-sm font-bold mb-6">
-            <Zap className="w-4 h-4" />
-            <span>Dành riêng cho Developer, Tester, BrSE</span>
-          </div>
-          <h1 className="text-4xl md:text-6xl font-extrabold text-white leading-tight mb-6">
-            Đập tan rào cản tiếng Anh - <span className="text-brand-accent">Tự tin</span> làm việc trong môi trường Global
-          </h1>
-          <p className="text-lg md:text-xl text-slate-300 mb-8 max-w-xl leading-relaxed">
-            Khóa học giao tiếp tiếng Anh thực chiến tập trung 100% vào phản xạ công việc. Không học ngữ pháp hàn lâm, chỉ học những gì IT cần để làm việc với khách hàng quốc tế.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4">
-            <a href="#register" className="bg-brand-accent hover:bg-brand-accent-hover text-brand-dark px-8 py-4 rounded-xl text-lg font-bold transition-all transform hover:scale-105 flex items-center justify-center gap-2 shadow-xl shadow-brand-accent/20">
-              Đăng ký học thử miễn phí
-              <ArrowRight className="w-5 h-5" />
-            </a>
-            <a href="#register" className="bg-white/10 hover:bg-white/20 border border-white/20 text-white px-8 py-4 rounded-xl text-lg font-bold transition-all flex items-center justify-center gap-2">
-              Nhận tư vấn lộ trình
-            </a>
-          </div>
-          
-          <div className="mt-12 flex items-center gap-6">
-            <div className="flex -space-x-3">
-              {[1, 2, 3, 4].map((i) => (
-                <img 
-                  key={i} 
-                  src={`https://picsum.photos/seed/user${i}/100/100`} 
-                  alt="Student" 
-                  className="w-10 h-10 rounded-full border-2 border-brand-dark" 
-                  referrerPolicy="no-referrer"
-                />
-              ))}
-            </div>
-            <p className="text-sm text-slate-400">
-              <span className="text-white font-bold">500+</span> IT Professionals đã tham gia
-            </p>
-          </div>
-        </motion.div>
+    <motion.div
+      initial={{ opacity: 0, x: 20 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ delay: 0.6 }}
+      className="absolute -right-6 -top-5 hidden rounded-2xl bg-white px-4 py-3 shadow-xl sm:block"
+    >
+      <p className="flex items-center gap-2 text-sm font-bold">
+        <CalendarCheck className="h-4 w-4 text-primary-ink" /> Đã điểm danh
+      </p>
+    </motion.div>
+    <motion.div
+      initial={{ opacity: 0, x: -20 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ delay: 0.8 }}
+      className="absolute -left-8 -bottom-6 hidden rounded-2xl bg-white px-4 py-3 shadow-xl sm:block"
+    >
+      <p className="flex items-center gap-2 text-sm font-bold">
+        <Smartphone className="h-4 w-4 text-peach-ink" /> Báo về Zalo phụ huynh
+      </p>
+    </motion.div>
+  </div>
+);
 
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.8, delay: 0.2 }}
-          className="relative hidden lg:block"
-        >
-          <div className="relative z-10 rounded-2xl overflow-hidden shadow-2xl border border-white/10">
-            <img 
-              src="https://picsum.photos/seed/it-meeting/800/600" 
-              alt="IT Meeting with Japanese Clients" 
-              className="w-full h-auto"
-              referrerPolicy="no-referrer"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-brand-dark/80 via-transparent to-transparent"></div>
-            <div className="absolute bottom-6 left-6 right-6">
-              <div className="glass-card p-4 rounded-xl bg-white/10 border-white/20 text-white">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                  <span className="text-xs font-bold uppercase tracking-wider">Live Session</span>
-                </div>
-                <p className="text-sm font-medium">"Làm thế nào để giải thích Bug logic một cách khéo léo?"</p>
-              </div>
-            </div>
-          </div>
-          {/* Decorative elements */}
-          <div className="absolute -top-6 -right-6 w-32 h-32 bg-brand-accent/20 rounded-full blur-3xl"></div>
-          <div className="absolute -bottom-10 -left-10 w-48 h-48 bg-blue-500/20 rounded-full blur-3xl"></div>
-        </motion.div>
-      </div>
+const Hero = () => (
+  <section id="top" className="relative overflow-hidden bg-lav pt-28 pb-16 md:pt-36 md:pb-24">
+    <div className="mx-auto grid max-w-7xl items-center gap-14 px-4 sm:px-6 lg:grid-cols-2 lg:px-8">
+      <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
+        <Eyebrow>
+          <Sparkles className="h-3.5 w-3.5" /> Lớp tiếng Anh của Ms Van
+        </Eyebrow>
+        <h1 className="mt-5 text-4xl font-extrabold leading-[1.1] sm:text-5xl lg:text-6xl">
+          Trên lớp học cùng cô.
+          <br />
+          <span className="text-primary-ink">Về nhà luyện tiếp</span> cùng Ms Van English.
+        </h1>
+        <p className="mt-6 max-w-xl text-lg text-ink/75">
+          Không gian học tiếng Anh trực tuyến cho học sinh, phụ huynh và giáo viên: làm bài cô giao, luyện đề TOEIC, IELTS,
+          THPT, đọc truyện tranh có giọng đọc, chơi trò chơi từ vựng và luyện nói với AI. Phụ huynh theo dõi được kết quả của con
+          mỗi ngày.
+        </p>
+        <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+          <a
+            href="#dang-ky"
+            className="inline-flex items-center justify-center gap-2 rounded-full bg-frame px-7 py-4 font-bold text-white transition hover:bg-frame-2"
+          >
+            Đăng ký tư vấn lớp học <ArrowRight className="h-5 w-5" />
+          </a>
+          <a
+            href="#video"
+            className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-7 py-4 font-bold text-ink transition hover:bg-white/80"
+          >
+            <Play className="h-5 w-5 fill-current" /> Xem video giới thiệu
+          </a>
+        </div>
+        <ul className="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-sm font-medium text-ink/75">
+          {['Tài khoản riêng do cô cấp', 'Học trên điện thoại & máy tính', 'Kết nối Zalo'].map((t) => (
+            <li key={t} className="flex items-center gap-1.5">
+              <CheckCircle2 className="h-4 w-4 text-primary-ink" /> {t}
+            </li>
+          ))}
+        </ul>
+      </motion.div>
+
+      <HeroMockup />
     </div>
   </section>
 );
 
-const PainPointsSection = () => {
-  const points = [
-    { icon: <MessageCircle className="w-6 h-6" />, text: "Đọc hiểu tài liệu (Documentation) tốt nhưng không thể mở lời trong các buổi họp" },
-    { icon: <Code2 className="w-6 h-6" />, text: "Lúng túng trong các buổi Standup, Daily, Sprint Review vì không biết diễn đạt ý tưởng" },
-    { icon: <Users className="w-6 h-6" />, text: "Thiếu tự tin khi làm việc trực tiếp với khách hàng hoặc đồng nghiệp nước ngoài" },
-    { icon: <ShieldCheck className="w-6 h-6" />, text: "Không thể giải thích Bug hoặc các vấn đề kỹ thuật phức tạp một cách rõ ràng, mạch lạc" },
-    { icon: <Briefcase className="w-6 h-6" />, text: "Giao tiếp qua Email/Chat còn lủng củng, sợ dùng sai từ khiến đối tác hiểu lầm" },
-    { icon: <Clock className="w-6 h-6" />, text: "Sợ phỏng vấn bằng tiếng Anh cho các dự án Global hoặc các công ty Big Tech" },
-  ];
+// ---------------------------------------------------------------------------
+// Video
+// ---------------------------------------------------------------------------
 
-  return (
-    <section id="pain-points" className="section-padding bg-slate-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">Bạn có đang gặp phải những <span className="text-red-500">nỗi đau</span> này?</h2>
-          <p className="text-slate-600 max-w-2xl mx-auto">Đừng để rào cản ngôn ngữ giới hạn tiềm năng sự nghiệp của một lập trình viên giỏi.</p>
-        </div>
+const VideoSection = () => {
+  const ref = useRef<HTMLVideoElement>(null);
+  const [playing, setPlaying] = useState(false);
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {points.map((point, index) => (
-            <motion.div 
-              key={index}
-              whileHover={{ y: -5 }}
-              className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex gap-4 items-start"
-            >
-              <div className="bg-red-50 p-3 rounded-xl text-red-500 shrink-0">
-                {point.icon}
-              </div>
-              <p className="text-slate-700 font-medium leading-relaxed">{point.text}</p>
-            </motion.div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-};
-
-const OutcomesSection = () => {
-  const outcomes = [
-    { title: "Làm chủ Daily Standup", desc: "Tự tin báo cáo 'What I did yesterday', 'What I'll do today' và 'Blockers' một cách trôi chảy.", icon: <Calendar /> },
-    { title: "Giải thích Bug chuyên nghiệp", desc: "Biết cách trình bày 'Steps to reproduce', 'Expected result' và 'Actual result' mạch lạc.", icon: <ShieldCheck /> },
-    { title: "Kỹ năng Q&A & Clarification", desc: "Sử dụng các cấu trúc 'Let me clarify...', 'Can you confirm...?' để xác nhận yêu cầu chuẩn xác.", icon: <MessageCircle /> },
-    { title: "Email & Chat chuẩn quốc tế", desc: "Viết Email, Slack message chuyên nghiệp, ngắn gọn và hiệu quả theo phong cách Global.", icon: <Award /> },
-    { title: "Đàm phán & Thương lượng", desc: "Kỹ năng đàm phán deadline, nguồn lực và giải quyết conflict trong team bằng tiếng Anh.", icon: <Clock /> },
-    { title: "Phỏng vấn tự tin", desc: "Vượt qua các vòng phỏng vấn kỹ thuật và văn hóa tại các tập đoàn đa quốc gia.", icon: <Target /> },
-  ];
-
-  return (
-    <section id="outcomes" className="section-padding">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">Sau khóa học, bạn sẽ <span className="text-brand-accent">làm được gì?</span></h2>
-          <p className="text-slate-600 max-w-2xl mx-auto">Chúng tôi cam kết đầu ra dựa trên năng lực phản xạ thực tế, không chỉ là lý thuyết suông.</p>
-        </div>
-
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {outcomes.map((item, index) => (
-            <div key={index} className="group p-8 rounded-3xl border border-slate-100 hover:border-brand-accent/30 hover:bg-brand-accent/5 transition-all duration-300">
-              <div className="w-14 h-14 bg-slate-100 group-hover:bg-brand-accent rounded-2xl flex items-center justify-center mb-6 text-brand-dark group-hover:text-white transition-colors">
-                {item.icon}
-              </div>
-              <h3 className="text-xl font-bold mb-3">{item.title}</h3>
-              <p className="text-slate-600 leading-relaxed">{item.desc}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-};
-
-const CurriculumSection = () => {
-  const modules = [
-    { id: 1, title: "Workplace Communication Basics", desc: "Small talk, văn hóa làm việc Global, cách viết Email/Slack chuyên nghiệp." },
-    { id: 2, title: "IT Vocabulary & Expressions", desc: "Hệ thống thuật ngữ IT thông dụng và các cấu trúc diễn đạt logic lập trình." },
-    { id: 3, title: "Daily Standup & Reporting", desc: "Mô phỏng Standup, báo cáo tiến độ và trình bày vấn đề (Blockers) hiệu quả." },
-    { id: 4, title: "Explaining Bugs & Technical Issues", desc: "Kỹ năng trình bày lỗi, nguyên nhân và đề xuất phương án xử lý kỹ thuật." },
-    { id: 5, title: "Asking Questions & Clarifying", desc: "Kỹ năng Q&A, xác nhận Spec, xử lý khi chưa hiểu rõ yêu cầu từ khách hàng." },
-    { id: 6, title: "Client Communication & Meetings", desc: "Giao tiếp trực tiếp trong các buổi họp Sprint Planning, Review và Demo." },
-    { id: 7, title: "Interview & Self-Introduction", desc: "Xây dựng Profile IT ấn tượng và luyện tập phỏng vấn chuyên sâu bằng tiếng Anh." },
-  ];
-
-  return (
-    <section id="curriculum" className="section-padding bg-brand-dark text-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid lg:grid-cols-2 gap-16 items-start">
-          <div>
-            <h2 className="text-3xl md:text-5xl font-bold mb-8 leading-tight">Lộ trình học tập <br /><span className="text-brand-accent">chuẩn thực chiến</span></h2>
-            <p className="text-slate-400 text-lg mb-12 max-w-md">
-              7 Module được thiết kế khoa học, đi từ nền tảng đến các tình huống phức tạp nhất trong dự án IT.
-            </p>
-            <div className="space-y-6">
-              <div className="flex items-center gap-4 bg-white/5 p-4 rounded-2xl border border-white/10">
-                <div className="bg-brand-accent p-2 rounded-lg text-brand-dark">
-                  <Users className="w-5 h-5" />
-                </div>
-                <div>
-                  <h4 className="font-bold">Lớp học quy mô nhỏ</h4>
-                  <p className="text-sm text-slate-400">Tối đa 10 học viên để đảm bảo tương tác.</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-4 bg-white/5 p-4 rounded-2xl border border-white/10">
-                <div className="bg-brand-accent p-2 rounded-lg text-brand-dark">
-                  <Monitor className="w-5 h-5" />
-                </div>
-                <div>
-                  <h4 className="font-bold">Học qua Role-play</h4>
-                  <p className="text-sm text-slate-400">80% thời lượng là thực hành hội thoại.</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            {modules.map((mod) => (
-              <motion.div 
-                key={mod.id}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                className="group bg-white/5 hover:bg-white/10 p-6 rounded-2xl border border-white/10 transition-all"
-              >
-                <div className="flex gap-6">
-                  <span className="text-3xl font-black text-white/10 group-hover:text-brand-accent/30 transition-colors">0{mod.id}</span>
-                  <div>
-                    <h3 className="text-xl font-bold mb-2 group-hover:text-brand-accent transition-colors">{mod.title}</h3>
-                    <p className="text-slate-400 text-sm leading-relaxed">{mod.desc}</p>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-};
-
-const USPSection = () => (
-  <section className="section-padding">
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div className="bg-slate-900 rounded-[3rem] overflow-hidden relative">
-        <div className="absolute top-0 right-0 w-1/2 h-full bg-brand-accent/5 pointer-events-none"></div>
-        <div className="grid lg:grid-cols-2 gap-12 p-8 md:p-16 items-center">
-          <div>
-            <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">Tại sao chọn <span className="text-brand-accent">IT English Mastery?</span></h2>
-            <div className="space-y-8">
-              {[
-                { title: "Chuyên biệt cho IT", desc: "Không dạy tiếng Anh giao tiếp đại trà. Mọi tình huống đều xoay quanh dự án phần mềm thực tế." },
-                { title: "Giảng viên là Senior/Lead", desc: "Những người có kinh nghiệm làm việc lâu năm trong các dự án Global và Big Tech." },
-                { title: "Học qua mô phỏng", desc: "Mỗi buổi học là một buổi Standup, một buổi Sprint Review thực tế." },
-                { title: "Tập trung phản xạ", desc: "Loại bỏ thói quen dịch từ Việt sang Anh. Hình thành tư duy phản xạ trực tiếp bằng tiếng Anh." },
-              ].map((item, i) => (
-                <div key={i} className="flex gap-4">
-                  <div className="mt-1">
-                    <CheckCircle2 className="text-brand-accent w-6 h-6" />
-                  </div>
-                  <div>
-                    <h4 className="text-white font-bold text-lg mb-1">{item.title}</h4>
-                    <p className="text-slate-400">{item.desc}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-          <div className="relative">
-            <div className="bg-white p-8 rounded-3xl shadow-2xl">
-              <h3 className="text-brand-dark font-bold text-xl mb-6 text-center">So sánh với học truyền thống</h3>
-              <div className="space-y-4">
-                <div className="flex justify-between items-center p-3 bg-red-50 rounded-xl">
-                  <span className="text-sm font-medium">Học ngữ pháp & từ vựng hàn lâm</span>
-                  <X className="text-red-500 w-5 h-5" />
-                </div>
-                <div className="flex justify-between items-center p-3 bg-green-50 rounded-xl border border-green-100">
-                  <span className="text-sm font-bold text-green-700">Học phản xạ dự án IT thực tế</span>
-                  <CheckCircle2 className="text-green-600 w-5 h-5" />
-                </div>
-                <div className="flex justify-between items-center p-3 bg-red-50 rounded-xl">
-                  <span className="text-sm font-medium">Chủ đề giao tiếp chung chung</span>
-                  <X className="text-red-500 w-5 h-5" />
-                </div>
-                <div className="flex justify-between items-center p-3 bg-green-50 rounded-xl border border-green-100">
-                  <span className="text-sm font-bold text-green-700">Thuật ngữ & Scenario IT</span>
-                  <CheckCircle2 className="text-green-600 w-5 h-5" />
-                </div>
-                <div className="flex justify-between items-center p-3 bg-red-50 rounded-xl">
-                  <span className="text-sm font-medium">Ngại nói, sợ sai ngữ pháp</span>
-                  <X className="text-red-500 w-5 h-5" />
-                </div>
-                <div className="flex justify-between items-center p-3 bg-green-50 rounded-xl border border-green-100">
-                  <span className="text-sm font-bold text-green-700">80% thời lượng thực hành nói</span>
-                  <CheckCircle2 className="text-green-600 w-5 h-5" />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-);
-
-const TestimonialsSection = () => {
-  const reviews = [
-    { name: "Nguyễn Minh", role: "Senior Developer", content: "Trước đây mình rất ngại nói tiếng Anh trong các buổi Sprint Review. Sau khóa học, mình đã có thể tự tin trình bày giải pháp và thảo luận trực tiếp với khách hàng US.", img: "https://picsum.photos/seed/dev1/100/100" },
-    { name: "Trần Lan", role: "QA / Tester", content: "Cách giải thích bug bằng tiếng Anh giờ đây trở nên tự nhiên hơn rất nhiều. Mình không còn phải dùng Google Translate cho mọi Email hay Slack message nữa.", img: "https://picsum.photos/seed/qa1/100/100" },
-    { name: "Lê Hoàng", role: "Project Manager", content: "Lộ trình cực kỳ sát thực tế. Những cấu trúc như 'Let me clarify...' hay 'The issue occurs when...' giúp mình điều phối cuộc họp chuyên nghiệp hơn hẳn.", img: "https://picsum.photos/seed/brse1/100/100" },
-  ];
-
-  return (
-    <section id="testimonials" className="section-padding bg-slate-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">Học viên nói gì về chúng tôi?</h2>
-          <p className="text-slate-600">Câu chuyện thành công từ những người đã thay đổi sự nghiệp nhờ tiếng Nhật IT.</p>
-        </div>
-
-        <div className="grid md:grid-cols-3 gap-8">
-          {reviews.map((review, i) => (
-            <div key={i} className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100 relative">
-              <Quote className="absolute top-6 right-8 text-slate-100 w-12 h-12" />
-              <div className="flex gap-1 text-brand-accent mb-4">
-                {[...Array(5)].map((_, j) => <Star key={j} className="w-4 h-4 fill-current" />)}
-              </div>
-              <p className="text-slate-700 italic mb-8 relative z-10">"{review.content}"</p>
-              <div className="flex items-center gap-4">
-                <img src={review.img} alt={review.name} className="w-12 h-12 rounded-full" referrerPolicy="no-referrer" />
-                <div>
-                  <h4 className="font-bold text-brand-dark">{review.name}</h4>
-                  <p className="text-xs text-slate-500">{review.role}</p>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-};
-
-const RegistrationSection = () => {
-  const [formState, setFormState] = useState({
-    name: '',
-    phone: '',
-    email: '',
-    role: '',
-    goal: ''
-  });
-  const [isSubmitted, setIsSubmitted] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    setError(null);
-
-    const path = 'registrations';
-    try {
-      await addDoc(collection(db, path), {
-        ...formState,
-        createdAt: serverTimestamp(),
-      });
-      setIsSubmitted(true);
-    } catch (err) {
-      setError('Đã có lỗi xảy ra. Vui lòng thử lại sau.');
-      try {
-        handleFirestoreError(err, OperationType.CREATE, path);
-      } catch (e) {
-        // Error already logged by handleFirestoreError
-      }
-    } finally {
-      setIsSubmitting(false);
-    }
+  const play = () => {
+    ref.current?.play();
   };
 
   return (
-    <section id="register" className="section-padding relative overflow-hidden">
-      <div className="absolute top-0 left-0 w-full h-full bg-brand-primary opacity-[0.02] pointer-events-none"></div>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid lg:grid-cols-2 gap-16 items-center">
-          <div>
-            <h2 className="text-3xl md:text-5xl font-bold mb-6 leading-tight">Bắt đầu hành trình <br /><span className="text-brand-accent">chinh phục</span> dự án Global</h2>
-            <p className="text-slate-600 text-lg mb-8">
-              Chỉ còn 5 suất ưu đãi giảm 30% học phí cho khóa học tháng tới. Đăng ký ngay để nhận tư vấn lộ trình cá nhân hóa miễn phí.
-            </p>
-            
-            <div className="space-y-6">
-              <div className="flex items-center gap-4">
-                <div className="bg-green-100 p-2 rounded-full text-green-600">
-                  <CheckCircle2 className="w-5 h-5" />
-                </div>
-                <span className="font-medium">Kiểm tra trình độ & Phản xạ miễn phí</span>
-              </div>
-              <div className="flex items-center gap-4">
-                <div className="bg-green-100 p-2 rounded-full text-green-600">
-                  <CheckCircle2 className="w-5 h-5" />
-                </div>
-                <span className="font-medium">Học thử 1 buổi thực chiến không mất phí</span>
-              </div>
-              <div className="flex items-center gap-4">
-                <div className="bg-green-100 p-2 rounded-full text-green-600">
-                  <CheckCircle2 className="w-5 h-5" />
-                </div>
-                <span className="font-medium">Tặng bộ tài liệu English for IT độc quyền</span>
-              </div>
-            </div>
+    <section id="video" className="section bg-frame text-white">
+      <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+        <motion.div {...fadeUp} className="mb-10 text-center">
+          <Eyebrow dark>Video giới thiệu · 0:46</Eyebrow>
+          <h2 className="mt-4 text-3xl font-extrabold md:text-5xl">Một vòng Ms Van English</h2>
+          <p className="mx-auto mt-4 max-w-2xl text-white/70">
+            Xem cách các con làm bài, luyện đề, luyện nói và cách phụ huynh, giáo viên đồng hành trên cùng một nền tảng.
+          </p>
+        </motion.div>
 
-            <div className="mt-12 p-6 bg-slate-50 rounded-2xl border border-slate-200 inline-block">
-              <p className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-2">Hotline tư vấn 24/7</p>
-              <div className="flex items-center gap-3 text-2xl font-bold text-brand-dark">
-                <Phone className="text-brand-accent" />
-                <span>1900 8888 XX</span>
-              </div>
-            </div>
-          </div>
+        <motion.div {...fadeUp} className="relative overflow-hidden rounded-3xl bg-black shadow-2xl ring-1 ring-white/10">
+          <video
+            ref={ref}
+            className="aspect-video w-full"
+            src={VIDEO_SRC}
+            poster={VIDEO_POSTER}
+            controls={playing}
+            playsInline
+            preload="metadata"
+            onPlay={() => setPlaying(true)}
+          >
+            Trình duyệt của bạn không hỗ trợ video.
+          </video>
+          {!playing && (
+            <button
+              onClick={play}
+              className="group absolute inset-0 flex items-end justify-start bg-gradient-to-t from-black/45 via-transparent to-transparent p-4 md:p-8"
+              aria-label="Phát video giới thiệu"
+            >
+              <span className="inline-flex items-center gap-3 rounded-full bg-peach py-2 pl-2 pr-5 font-bold text-peach-ink shadow-xl transition group-hover:scale-105 md:gap-4 md:pr-7 md:text-lg">
+                <span className="grid h-10 w-10 place-items-center rounded-full bg-peach-ink text-peach md:h-14 md:w-14">
+                  <Play className="ml-0.5 h-5 w-5 fill-current md:h-6 md:w-6" />
+                </span>
+                Xem video · 0:46
+              </span>
+            </button>
+          )}
+        </motion.div>
+      </div>
+    </section>
+  );
+};
 
-          <div className="relative">
-            <div className="bg-white p-8 md:p-10 rounded-[2.5rem] shadow-2xl border border-slate-100 relative z-10">
-              {isSubmitted ? (
-                <motion.div 
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="text-center py-12"
+// ---------------------------------------------------------------------------
+// Roles
+// ---------------------------------------------------------------------------
+
+const ROLES = [
+  {
+    tag: 'HS',
+    title: 'Học sinh',
+    desc: 'Bài được giao, luyện TOEIC và IELTS, điểm danh và nhận xét của giáo viên.',
+    points: ['Làm bài cô giao mỗi tuần', 'Luyện đề trắc nghiệm có chấm điểm', 'Luyện nói với AI', 'Sổ từ của tôi'],
+    href: LINKS.student,
+    cta: 'Đăng nhập học sinh',
+    tone: 'bg-primary-soft text-primary-ink',
+  },
+  {
+    tag: 'PH',
+    title: 'Phụ huynh',
+    desc: 'Theo dõi bài tập, kết quả, điểm danh và lộ trình học của con.',
+    points: ['Xem con đã làm bài chưa', 'Điểm số và nhận xét của cô', 'Lịch sử điểm danh', 'Nhận thông báo qua Zalo'],
+    href: LINKS.parent,
+    cta: 'Dành cho phụ huynh',
+    tone: 'bg-peach-soft text-peach-ink',
+  },
+  {
+    tag: 'GV',
+    title: 'Giáo viên',
+    desc: 'Giao bài, chấm bài, điểm danh, kết nối Zalo và quản lý lớp.',
+    points: ['Giao bài theo lớp', 'Chấm bài, nhận xét từng bạn', 'Điểm danh nhanh', 'Xem lịch sử luyện nói'],
+    href: LINKS.teacher,
+    cta: 'Không gian giáo viên',
+    tone: 'bg-lav text-ink',
+  },
+];
+
+const RolesSection = () => (
+  <section className="section">
+    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <motion.div {...fadeUp} className="mx-auto mb-12 max-w-2xl text-center">
+        <Eyebrow>Một nền tảng · ba góc nhìn</Eyebrow>
+        <h2 className="mt-4 text-3xl font-extrabold md:text-5xl">Ai cũng có chỗ của mình</h2>
+        <p className="mt-4 text-muted">
+          Mỗi người dùng có tài khoản riêng do giáo viên cấp. Dữ liệu học tập chỉ người có quyền mới xem được.
+        </p>
+      </motion.div>
+
+      <div className="grid gap-6 md:grid-cols-3">
+        {ROLES.map((r, i) => (
+          <motion.article
+            key={r.tag}
+            {...fadeUp}
+            transition={{ duration: 0.5, delay: i * 0.1 }}
+            className="card flex flex-col p-7"
+          >
+            <span className={`grid h-14 w-14 place-items-center rounded-2xl text-lg font-extrabold ${r.tone}`}>{r.tag}</span>
+            <h3 className="mt-5 text-2xl font-bold">Tôi là {r.title.toLowerCase()}</h3>
+            <p className="mt-2 text-muted">{r.desc}</p>
+            <ul className="mt-5 flex-1 space-y-2.5">
+              {r.points.map((p) => (
+                <li key={p} className="flex items-start gap-2.5 text-sm">
+                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary-ink" /> {p}
+                </li>
+              ))}
+            </ul>
+            <a
+              href={r.href}
+              className="mt-7 inline-flex items-center gap-1.5 font-bold text-link hover:text-primary-ink"
+            >
+              {r.cta} <ArrowRight className="h-4 w-4" />
+            </a>
+          </motion.article>
+        ))}
+      </div>
+    </div>
+  </section>
+);
+
+// ---------------------------------------------------------------------------
+// Features
+// ---------------------------------------------------------------------------
+
+const FEATURES = [
+  { icon: ClipboardCheck, title: 'Bài cô giao', desc: 'Làm bài tập về nhà ngay trên web, nộp bài và nhận kết quả, nhận xét của cô.' },
+  { icon: LineChart, title: 'Luyện thi TOEIC', desc: 'Làm đề có chấm điểm, lưu tiến độ giữa chừng và xem lại từng phần sau khi nộp.' },
+  { icon: GraduationCap, title: 'Luyện thi IELTS', desc: 'Luyện từng kỹ năng theo thời gian gợi ý. Bản nháp lưu trên máy chủ, làm tiếp trên thiết bị khác.' },
+  { icon: FileText, title: 'Kho đề phong phú', desc: 'Đề THPT, đề vào 10, đề theo lớp, đề học sinh giỏi và đề trắc nghiệm do giáo viên chuẩn bị.' },
+  { icon: Mic, title: 'Luyện nói với AI', desc: 'Trò chuyện, luyện phát âm và phản xạ bất cứ lúc nào. Giáo viên xem lại được lịch sử luyện nói.' },
+  { icon: BookOpen, title: 'Truyện tranh có giọng đọc', desc: 'Đọc truyện kèm giọng đọc chuẩn, vừa nghe vừa học từ mới theo ngữ cảnh.' },
+  { icon: Gamepad2, title: 'Trò chơi từ vựng', desc: 'Học mà chơi, chơi mà học. Ôn từ vựng nhẹ nhàng để các con nhớ lâu hơn.' },
+  { icon: BookMarked, title: 'Sổ từ của tôi', desc: 'Lưu lại những từ mới của riêng mình để ôn tập bất cứ lúc nào.' },
+  { icon: CalendarCheck, title: 'Điểm danh & lịch sử học', desc: 'Theo dõi chuyên cần và toàn bộ quá trình học của từng bạn theo lộ trình.' },
+  { icon: MessageCircle, title: 'Kết nối Zalo', desc: 'Giáo viên kết nối Zalo để thông tin học tập đến với phụ huynh nhanh hơn.' },
+];
+
+const FeaturesSection = () => (
+  <section id="tinh-nang" className="section bg-white">
+    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <motion.div {...fadeUp} className="mb-12 max-w-2xl">
+        <Eyebrow>Tính năng</Eyebrow>
+        <h2 className="mt-4 text-3xl font-extrabold md:text-5xl">Mọi thứ để luyện tiếng Anh mỗi ngày</h2>
+        <p className="mt-4 text-muted">
+          Ngoài giờ trên lớp, các con luyện tiếp trên website: làm bài cô giao, đọc truyện tranh có giọng đọc, chơi trò chơi từ
+          vựng và luyện đề.
+        </p>
+      </motion.div>
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        {FEATURES.map((f, i) => (
+          <motion.div
+            key={f.title}
+            {...fadeUp}
+            transition={{ duration: 0.4, delay: (i % 5) * 0.06 }}
+            className="rounded-3xl bg-surface p-6 transition hover:-translate-y-1 hover:bg-primary-soft"
+          >
+            <f.icon className="h-7 w-7 text-primary-ink" />
+            <h3 className="mt-4 font-bold">{f.title}</h3>
+            <p className="mt-2 text-sm text-muted">{f.desc}</p>
+          </motion.div>
+        ))}
+      </div>
+    </div>
+  </section>
+);
+
+// ---------------------------------------------------------------------------
+// Classroom
+// ---------------------------------------------------------------------------
+
+const CLASSROOM = [
+  { icon: BookOpen, title: 'Học bằng câu chuyện', desc: 'Các con ngồi quanh cô, nghe kể, trả lời câu hỏi và đoán xem chuyện gì xảy ra tiếp theo. Tiếng Anh đi vào tự nhiên qua từng trang sách.' },
+  { icon: Users, title: 'Nói cùng giáo viên bản ngữ', desc: 'Giáo viên nước ngoài đứng lớp giúp các con quen giọng chuẩn, mạnh dạn hỏi và trả lời bằng tiếng Anh ngay trong giờ học.' },
+  { icon: Presentation, title: 'Làm việc nhóm, tự tin thuyết trình', desc: 'Các con thảo luận theo nhóm, cùng làm phiếu bài tập và tự đứng lên trình bày bài trước lớp.' },
+  { icon: Smile, title: 'Vui để nhớ lâu', desc: 'Trò chơi, tô màu, vẽ và những buổi sinh nhật nhỏ giữ cho giờ học luôn rộn ràng, để các con mong đến buổi học tiếp theo.' },
+];
+
+const ClassroomSection = () => (
+  <section id="lop-hoc" className="section">
+    <div className="mx-auto grid max-w-7xl gap-12 px-4 sm:px-6 lg:grid-cols-[0.9fr_1.1fr] lg:px-8">
+      <motion.div {...fadeUp}>
+        <Eyebrow>Các con học như thế nào</Eyebrow>
+        <h2 className="mt-4 text-3xl font-extrabold md:text-5xl">Một lớp học nhỏ, ấm áp</h2>
+        <p className="mt-5 text-lg text-muted">
+          Nơi các con học tiếng Anh qua câu chuyện, trò chơi và những cuộc trò chuyện thật mỗi ngày. Cô theo sát từng bạn, khen
+          đúng lúc và nhắc nhở khi con cần cố gắng hơn.
+        </p>
+        <a href={LINKS.about} className="mt-6 inline-flex items-center gap-1.5 font-bold text-link hover:text-primary-ink">
+          Xem khoảnh khắc ở lớp <ArrowRight className="h-4 w-4" />
+        </a>
+      </motion.div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        {CLASSROOM.map((c, i) => (
+          <motion.div key={c.title} {...fadeUp} transition={{ duration: 0.4, delay: i * 0.08 }} className="card p-6">
+            <span className="grid h-11 w-11 place-items-center rounded-xl bg-peach-soft">
+              <c.icon className="h-5 w-5 text-peach-ink" />
+            </span>
+            <h3 className="mt-4 text-lg font-bold">{c.title}</h3>
+            <p className="mt-2 text-sm text-muted">{c.desc}</p>
+          </motion.div>
+        ))}
+      </div>
+    </div>
+  </section>
+);
+
+// ---------------------------------------------------------------------------
+// How to start
+// ---------------------------------------------------------------------------
+
+const STEPS = [
+  { n: '01', title: 'Đăng ký tư vấn', desc: 'Để lại thông tin, cô sẽ liên hệ để tư vấn lớp phù hợp với trình độ và mục tiêu của con.' },
+  { n: '02', title: 'Cô cấp tài khoản', desc: 'Mỗi học sinh có tên đăng nhập và mật khẩu riêng do cô cấp. Phụ huynh có tài khoản để theo dõi.' },
+  { n: '03', title: 'Học và theo dõi mỗi ngày', desc: 'Con làm bài, luyện đề, luyện nói. Kết quả, điểm danh và nhận xét được lưu theo tài khoản.' },
+];
+
+const StepsSection = () => (
+  <section id="bat-dau" className="section bg-lav">
+    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <motion.div {...fadeUp} className="mx-auto mb-12 max-w-2xl text-center">
+        <Eyebrow>Cách bắt đầu</Eyebrow>
+        <h2 className="mt-4 text-3xl font-extrabold md:text-5xl">Ba bước để vào lớp</h2>
+      </motion.div>
+      <ol className="grid gap-6 md:grid-cols-3">
+        {STEPS.map((s, i) => (
+          <motion.li key={s.n} {...fadeUp} transition={{ duration: 0.4, delay: i * 0.1 }} className="rounded-3xl bg-white p-7">
+            <span className="text-4xl font-extrabold text-primary">{s.n}</span>
+            <h3 className="mt-3 text-xl font-bold">{s.title}</h3>
+            <p className="mt-2 text-muted">{s.desc}</p>
+          </motion.li>
+        ))}
+      </ol>
+    </div>
+  </section>
+);
+
+// ---------------------------------------------------------------------------
+// Testimonials + trust
+// ---------------------------------------------------------------------------
+
+const QUOTES = [
+  'Chị thấy tiếng Anh ở trường con tiến bộ rõ rệt từ khi theo học bên em.',
+  'Các con rất thích học cô luôn ý, đến giờ học là nhớ lắm. Nhờ cô dìu dắt con ạ.',
+];
+
+const TestimonialsSection = () => (
+  <section className="section bg-frame text-white">
+    <div className="mx-auto grid max-w-7xl gap-12 px-4 sm:px-6 lg:grid-cols-2 lg:px-8">
+      <div>
+        <Eyebrow dark>Phụ huynh nói gì</Eyebrow>
+        <h2 className="mt-4 text-3xl font-extrabold md:text-5xl">Niềm vui của con là động lực của cô</h2>
+        <div className="mt-8 space-y-4">
+          {QUOTES.map((q) => (
+            <motion.figure key={q} {...fadeUp} className="rounded-3xl bg-frame-2 p-6">
+              <Quote className="h-6 w-6 text-peach" />
+              <blockquote className="mt-3 text-lg">“{q}”</blockquote>
+              <figcaption className="mt-3 text-sm text-white/55">Phụ huynh học sinh · tên đã được che</figcaption>
+            </motion.figure>
+          ))}
+        </div>
+      </div>
+
+      <motion.div {...fadeUp} className="self-center rounded-3xl bg-white/5 p-8 ring-1 ring-white/10">
+        <ShieldCheck className="h-10 w-10 text-lav" />
+        <h3 className="mt-4 text-2xl font-bold">An toàn dữ liệu của con</h3>
+        <ul className="mt-5 space-y-4 text-white/80">
+          {[
+            'Tài khoản do giáo viên cấp, không đăng ký tràn lan.',
+            'Dữ liệu học tập lưu riêng theo từng tài khoản, chỉ người có quyền mới xem được.',
+            'Mỗi tài khoản chỉ dùng trên một trình duyệt: đăng nhập ở máy mới sẽ đăng xuất máy cũ.',
+            'Có chính sách bảo vệ dữ liệu cá nhân rõ ràng.',
+          ].map((t) => (
+            <li key={t} className="flex gap-3">
+              <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-lav" /> {t}
+            </li>
+          ))}
+        </ul>
+        <a href={LINKS.privacy} className="mt-6 inline-flex items-center gap-1.5 font-bold text-lav hover:text-white">
+          Đọc chính sách bảo mật <ArrowRight className="h-4 w-4" />
+        </a>
+      </motion.div>
+    </div>
+  </section>
+);
+
+// ---------------------------------------------------------------------------
+// FAQ
+// ---------------------------------------------------------------------------
+
+const FAQS = [
+  {
+    q: 'Làm sao để có tài khoản Ms Van English?',
+    a: 'Tài khoản do giáo viên cấp cho học sinh trong lớp. Phụ huynh hãy đăng ký tư vấn ở cuối trang hoặc liên hệ trực tiếp cô để được xếp lớp và nhận tài khoản.',
+  },
+  {
+    q: 'Con học trên thiết bị nào?',
+    a: 'Website chạy trên trình duyệt của điện thoại, máy tính bảng và máy tính. Mỗi tài khoản dùng trên một trình duyệt tại một thời điểm để bảo vệ dữ liệu.',
+  },
+  {
+    q: 'Có những loại đề nào để luyện?',
+    a: 'TOEIC, IELTS, đề THPT, đề vào 10, đề theo lớp, đề học sinh giỏi và các đề trắc nghiệm do giáo viên chuẩn bị. Kết quả được lưu theo tài khoản.',
+  },
+  {
+    q: 'Phụ huynh theo dõi con như thế nào?',
+    a: 'Phụ huynh đăng nhập bằng tài khoản riêng để xem bài tập, kết quả, điểm danh và lộ trình học của con. Giáo viên có thể kết nối Zalo để thông tin đến nhanh hơn.',
+  },
+  {
+    q: 'Quên mật khẩu thì làm sao?',
+    a: 'Hãy nhắn giáo viên để được đặt lại mật khẩu.',
+  },
+];
+
+const FaqSection = () => {
+  const [open, setOpen] = useState<number | null>(0);
+  return (
+    <section id="hoi-dap" className="section bg-white">
+      <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
+        <motion.div {...fadeUp} className="mb-10 text-center">
+          <Eyebrow>Hỏi đáp</Eyebrow>
+          <h2 className="mt-4 text-3xl font-extrabold md:text-5xl">Câu hỏi thường gặp</h2>
+        </motion.div>
+        <div className="space-y-3">
+          {FAQS.map((f, i) => {
+            const isOpen = open === i;
+            return (
+              <div key={f.q} className="rounded-2xl bg-surface">
+                <button
+                  className="flex w-full items-center justify-between gap-4 p-5 text-left font-bold"
+                  onClick={() => setOpen(isOpen ? null : i)}
+                  aria-expanded={isOpen}
                 >
-                  <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <CheckCircle2 className="w-10 h-10" />
-                  </div>
-                  <h3 className="text-2xl font-bold mb-2">Đăng ký thành công!</h3>
-                  <p className="text-slate-600">Cảm ơn bạn đã quan tâm. Đội ngũ tư vấn sẽ liên hệ với bạn trong vòng 24h tới.</p>
-                  <button 
-                    onClick={() => setIsSubmitted(false)}
-                    className="mt-8 text-brand-accent font-bold hover:underline"
-                  >
-                    Gửi lại form khác
-                  </button>
-                </motion.div>
-              ) : (
-                <>
-                  <h3 className="text-2xl font-bold mb-8">Thông tin đăng ký</h3>
-                  <form onSubmit={handleSubmit} className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-bold text-slate-700 mb-1">Họ và tên *</label>
-                      <input 
-                        required
-                        type="text" 
-                        placeholder="VD: Nguyễn Văn A"
-                        className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-brand-accent focus:ring-2 focus:ring-brand-accent/20 outline-none transition-all"
-                        value={formState.name}
-                        onChange={(e) => setFormState({...formState, name: e.target.value})}
-                      />
-                    </div>
-                    <div className="grid md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-bold text-slate-700 mb-1">Số điện thoại *</label>
-                        <input 
-                          required
-                          type="tel" 
-                          placeholder="090..."
-                          className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-brand-accent focus:ring-2 focus:ring-brand-accent/20 outline-none transition-all"
-                          value={formState.phone}
-                          onChange={(e) => setFormState({...formState, phone: e.target.value})}
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-bold text-slate-700 mb-1">Email *</label>
-                        <input 
-                          required
-                          type="email" 
-                          placeholder="email@company.com"
-                          className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-brand-accent focus:ring-2 focus:ring-brand-accent/20 outline-none transition-all"
-                          value={formState.email}
-                          onChange={(e) => setFormState({...formState, email: e.target.value})}
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-bold text-slate-700 mb-1">Vị trí công việc</label>
-                      <select 
-                        className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-brand-accent focus:ring-2 focus:ring-brand-accent/20 outline-none transition-all bg-white"
-                        value={formState.role}
-                        onChange={(e) => setFormState({...formState, role: e.target.value})}
-                      >
-                        <option value="">Chọn vị trí</option>
-                        <option value="dev">Developer</option>
-                        <option value="tester">Tester / QA</option>
-                        <option value="brse">BrSE / Comtor</option>
-                        <option value="pm">PM / Manager</option>
-                        <option value="other">Khác</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-bold text-slate-700 mb-1">Mục tiêu học tập</label>
-                      <textarea 
-                        rows={3}
-                        placeholder="VD: Muốn tự tin họp Daily với khách hàng..."
-                        className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-brand-accent focus:ring-2 focus:ring-brand-accent/20 outline-none transition-all"
-                        value={formState.goal}
-                        onChange={(e) => setFormState({...formState, goal: e.target.value})}
-                      ></textarea>
-                    </div>
-
-                    {error && (
-                      <div className="flex items-center gap-2 p-4 bg-red-50 text-red-600 rounded-xl border border-red-100 text-sm">
-                        <AlertCircle className="w-5 h-5 shrink-0" />
-                        <p>{error}</p>
-                      </div>
-                    )}
-
-                    <button 
-                      type="submit"
-                      disabled={isSubmitting}
-                      className={`w-full bg-brand-accent hover:bg-brand-accent-hover text-brand-dark py-4 rounded-xl text-lg font-bold transition-all shadow-xl shadow-brand-accent/20 mt-4 flex items-center justify-center gap-2 ${isSubmitting ? 'opacity-70 cursor-not-allowed' : ''}`}
+                  {f.q}
+                  <ChevronDown className={`h-5 w-5 shrink-0 transition ${isOpen ? 'rotate-180' : ''}`} />
+                </button>
+                <AnimatePresence initial={false}>
+                  {isOpen && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      className="overflow-hidden"
                     >
-                      {isSubmitting ? (
-                        <>
-                          <div className="w-5 h-5 border-2 border-brand-dark/30 border-t-brand-dark rounded-full animate-spin"></div>
-                          Đang gửi...
-                        </>
-                      ) : (
-                        'Đăng ký ngay'
-                      )}
-                    </button>
-                    <p className="text-center text-xs text-slate-400 mt-4">
-                      Bằng cách đăng ký, bạn đồng ý với chính sách bảo mật của chúng tôi.
-                    </p>
-                  </form>
-                </>
-              )}
-            </div>
-            {/* Decorative blobs */}
-            <div className="absolute -top-10 -right-10 w-40 h-40 bg-brand-accent/10 rounded-full blur-3xl -z-10"></div>
-            <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-blue-500/10 rounded-full blur-3xl -z-10"></div>
-          </div>
+                      <p className="px-5 pb-5 text-muted">{f.a}</p>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            );
+          })}
         </div>
       </div>
     </section>
   );
 };
 
-const Footer = () => (
-  <footer className="bg-brand-dark text-white pt-20 pb-10 border-t border-white/5">
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
-        <div className="col-span-1 lg:col-span-1">
-          <div className="flex items-center gap-2 mb-6">
-            <div className="bg-brand-accent p-1.5 rounded-lg">
-              <Terminal className="text-brand-dark w-6 h-6" />
-            </div>
-            <span className="text-xl font-bold font-display">
-              IT <span className="text-brand-accent">English</span> Mastery
-            </span>
-          </div>
-          <p className="text-slate-400 text-sm leading-relaxed mb-6">
-            Hệ thống đào tạo tiếng Anh giao tiếp thực chiến hàng đầu cho nhân sự ngành IT tại Việt Nam.
+// ---------------------------------------------------------------------------
+// Registration (Firestore: consultations)
+// ---------------------------------------------------------------------------
+
+function logFirestoreError(error: unknown, path: string) {
+  console.error(
+    'Firestore error:',
+    JSON.stringify({
+      error: error instanceof Error ? error.message : String(error),
+      operationType: 'create',
+      path,
+      userId: auth.currentUser?.uid,
+    }),
+  );
+}
+
+const ROLE_OPTIONS = [
+  { value: 'parent', label: 'Phụ huynh' },
+  { value: 'student', label: 'Học sinh' },
+  { value: 'other', label: 'Khác' },
+];
+
+const RegistrationSection = () => {
+  const [form, setForm] = useState({ name: '', phone: '', role: 'parent', grade: '', goal: '' });
+  const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const onSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    const phone = form.phone.replace(/[\s.-]/g, '');
+    if (!/^\+?\d{9,15}$/.test(phone)) {
+      setError('Số điện thoại chưa đúng. Vui lòng kiểm tra lại.');
+      return;
+    }
+    setSubmitting(true);
+    setError(null);
+    const path = 'consultations';
+    try {
+      const data: Record<string, unknown> = {
+        name: form.name.trim(),
+        phone,
+        role: form.role,
+        createdAt: serverTimestamp(),
+      };
+      if (form.grade.trim()) data.grade = form.grade.trim();
+      if (form.goal.trim()) data.goal = form.goal.trim();
+      await addDoc(collection(db, path), data);
+      setSubmitted(true);
+    } catch (err) {
+      setError('Đã có lỗi xảy ra. Vui lòng thử lại sau hoặc nhắn trực tiếp cho cô.');
+      logFirestoreError(err, path);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const input =
+    'w-full rounded-xl border border-line bg-white px-4 py-3 outline-none transition focus:border-primary focus:ring-4 focus:ring-primary-soft';
+
+  return (
+    <section id="dang-ky" className="section bg-lav">
+      <div className="mx-auto grid max-w-6xl items-center gap-12 px-4 sm:px-6 lg:grid-cols-2 lg:px-8">
+        <motion.div {...fadeUp}>
+          <Eyebrow>Học cùng Ms Van</Eyebrow>
+          <h2 className="mt-4 text-3xl font-extrabold md:text-5xl">Đăng ký tư vấn lớp phù hợp với con</h2>
+          <p className="mt-5 text-lg text-ink/75">
+            Mỗi học sinh có tài khoản riêng do cô cấp. Để lại thông tin, cô sẽ liên hệ tư vấn lớp và lộ trình phù hợp.
           </p>
-          <div className="flex gap-4">
-            <a href="#" className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-brand-accent hover:text-brand-dark transition-all">
-              <MessageCircle className="w-5 h-5" />
-            </a>
-            <a href="#" className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-brand-accent hover:text-brand-dark transition-all">
-              <Users className="w-5 h-5" />
-            </a>
-          </div>
-        </div>
-
-        <div>
-          <h4 className="font-bold text-lg mb-6">Khóa học</h4>
-          <ul className="space-y-4 text-slate-400 text-sm">
-            <li><a href="#" className="hover:text-brand-accent transition-colors">Tiếng Anh IT Cơ bản</a></li>
-            <li><a href="#" className="hover:text-brand-accent transition-colors">Giao tiếp Global thực chiến</a></li>
-            <li><a href="#" className="hover:text-brand-accent transition-colors">Luyện phỏng vấn IT English</a></li>
-            <li><a href="#" className="hover:text-brand-accent transition-colors">English for QA/Tester</a></li>
+          <ul className="mt-8 space-y-4">
+            {[
+              { icon: Heart, t: 'Lớp nhỏ, cô theo sát từng bạn' },
+              { icon: Library, t: 'Kho đề và bài luyện dùng cả năm' },
+              { icon: Users, t: 'Phụ huynh đồng hành cùng con' },
+            ].map(({ icon: Icon, t }) => (
+              <li key={t} className="flex items-center gap-3 font-semibold">
+                <span className="grid h-10 w-10 place-items-center rounded-xl bg-white">
+                  <Icon className="h-5 w-5 text-primary-ink" />
+                </span>
+                {t}
+              </li>
+            ))}
           </ul>
-        </div>
+        </motion.div>
 
-        <div>
-          <h4 className="font-bold text-lg mb-6">Liên kết</h4>
-          <ul className="space-y-4 text-slate-400 text-sm">
-            <li><a href="#pain-points" className="hover:text-brand-accent transition-colors">Về chúng tôi</a></li>
-            <li><a href="#curriculum" className="hover:text-brand-accent transition-colors">Lộ trình học</a></li>
-            <li><a href="#" className="hover:text-brand-accent transition-colors">Blog chia sẻ</a></li>
-            <li><a href="#" className="hover:text-brand-accent transition-colors">Chính sách bảo mật</a></li>
-          </ul>
-        </div>
+        <motion.div {...fadeUp} className="rounded-[2rem] bg-white p-6 shadow-xl sm:p-8">
+          {submitted ? (
+            <div className="py-10 text-center" role="status">
+              <span className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-primary-soft">
+                <CheckCircle2 className="h-8 w-8 text-primary-ink" />
+              </span>
+              <h3 className="mt-5 text-2xl font-bold">Cảm ơn bạn!</h3>
+              <p className="mt-2 text-muted">Cô đã nhận được thông tin và sẽ liên hệ sớm.</p>
+              <button
+                onClick={() => {
+                  setSubmitted(false);
+                  setForm({ name: '', phone: '', role: 'parent', grade: '', goal: '' });
+                }}
+                className="mt-6 font-bold text-link"
+              >
+                Gửi thêm một đăng ký
+              </button>
+            </div>
+          ) : (
+            <form onSubmit={onSubmit} className="space-y-4">
+              <div>
+                <label htmlFor="name" className="mb-1.5 block text-sm font-semibold">Họ và tên *</label>
+                <input id="name" required maxLength={100} className={input} placeholder="Nguyễn Thị Hoa"
+                  value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label htmlFor="phone" className="mb-1.5 block text-sm font-semibold">Số điện thoại / Zalo *</label>
+                  <input id="phone" required type="tel" inputMode="tel" maxLength={20} className={input} placeholder="09xx xxx xxx"
+                    value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+                </div>
+                <div>
+                  <label htmlFor="role" className="mb-1.5 block text-sm font-semibold">Bạn là *</label>
+                  <select id="role" className={input} value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}>
+                    {ROLE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label htmlFor="grade" className="mb-1.5 block text-sm font-semibold">Con đang học lớp mấy?</label>
+                <input id="grade" maxLength={50} className={input} placeholder="Ví dụ: Lớp 4, lớp 9 ôn thi vào 10…"
+                  value={form.grade} onChange={(e) => setForm({ ...form, grade: e.target.value })} />
+              </div>
+              <div>
+                <label htmlFor="goal" className="mb-1.5 block text-sm font-semibold">Mong muốn của bạn</label>
+                <textarea id="goal" rows={3} maxLength={1000} className={input} placeholder="Ví dụ: con muốn tự tin giao tiếp, ôn thi TOEIC…"
+                  value={form.goal} onChange={(e) => setForm({ ...form, goal: e.target.value })} />
+              </div>
 
-        <div>
-          <h4 className="font-bold text-lg mb-6">Liên hệ</h4>
-          <ul className="space-y-4 text-slate-400 text-sm">
-            <li className="flex items-start gap-3">
-              <MapPin className="w-5 h-5 text-brand-accent shrink-0" />
-              <span>Tòa nhà IT Hub, Duy Tân, Cầu Giấy, Hà Nội</span>
-            </li>
-            <li className="flex items-center gap-3">
-              <Phone className="w-5 h-5 text-brand-accent shrink-0" />
-              <span>1900 8888 XX</span>
-            </li>
-            <li className="flex items-center gap-3">
-              <Mail className="w-5 h-5 text-brand-accent shrink-0" />
-              <span>contact@itenglish.edu.vn</span>
-            </li>
-          </ul>
-        </div>
+              {error && (
+                <p className="flex items-center gap-2 rounded-xl bg-red-50 p-3 text-sm text-red-700" role="alert">
+                  <AlertCircle className="h-4 w-4 shrink-0" /> {error}
+                </p>
+              )}
+
+              <button type="submit" disabled={submitting}
+                className="flex w-full items-center justify-center gap-2 rounded-full bg-frame py-4 font-bold text-white transition hover:bg-frame-2 disabled:opacity-60">
+                {submitting ? 'Đang gửi…' : <>Gửi đăng ký <ArrowRight className="h-5 w-5" /></>}
+              </button>
+              <p className="text-center text-xs text-muted">
+                Thông tin chỉ dùng để cô liên hệ tư vấn. Xem{' '}
+                <a href={LINKS.privacy} className="underline">chính sách bảo vệ dữ liệu cá nhân</a>.
+              </p>
+            </form>
+          )}
+        </motion.div>
       </div>
-      
-      <div className="pt-8 border-t border-white/5 text-center text-slate-500 text-xs">
-        <p>© 2026 IT English Mastery. All rights reserved. Designed for high-performing IT professionals.</p>
+    </section>
+  );
+};
+
+// ---------------------------------------------------------------------------
+// Footer
+// ---------------------------------------------------------------------------
+
+const Footer = () => (
+  <footer className="bg-frame py-12 text-white/70">
+    <div className="mx-auto flex max-w-7xl flex-col gap-8 px-4 sm:px-6 md:flex-row md:items-center md:justify-between lg:px-8">
+      <div>
+        <a href="#top" className="flex items-center gap-2.5 text-lg font-bold text-white">
+          <BrandMark className="h-9 w-9 text-lg" /> Ms Van English
+        </a>
+        <p className="mt-3 max-w-sm text-sm">Không gian học tiếng Anh của Ms Van cho học sinh, phụ huynh và giáo viên.</p>
       </div>
+      <nav className="flex flex-wrap gap-x-6 gap-y-3 text-sm" aria-label="Liên kết chân trang">
+        <a href={LINKS.student} className="hover:text-white">Đăng nhập học sinh</a>
+        <a href={LINKS.parent} className="hover:text-white">Phụ huynh</a>
+        <a href={LINKS.teacher} className="hover:text-white">Giáo viên</a>
+        <a href={LINKS.about} className="hover:text-white">Về chúng tôi</a>
+        <a href={LINKS.privacy} className="hover:text-white">Chính sách bảo mật</a>
+      </nav>
     </div>
+    <p className="mx-auto mt-10 max-w-7xl px-4 text-xs text-white/40 sm:px-6 lg:px-8">
+      © {new Date().getFullYear()} Ms Van English · msvanhomework.site
+    </p>
   </footer>
 );
 
-// --- Main App ---
-
 export default function App() {
   return (
-    <div className="min-h-screen selection:bg-brand-accent selection:text-brand-dark">
-      <Navbar />
-      <main>
-        <HeroSection />
-        <PainPointsSection />
-        <OutcomesSection />
-        <CurriculumSection />
-        <USPSection />
+    <div className="min-h-screen">
+      <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[60] focus:rounded-lg focus:bg-white focus:px-4 focus:py-2">
+        Đến nội dung chính
+      </a>
+      <Header />
+      <main id="main">
+        <Hero />
+        <VideoSection />
+        <RolesSection />
+        <FeaturesSection />
+        <ClassroomSection />
+        <StepsSection />
         <TestimonialsSection />
+        <FaqSection />
         <RegistrationSection />
       </main>
       <Footer />

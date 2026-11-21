@@ -15,6 +15,12 @@ service cloud.firestore {
     //   - goal: string (optional, max 1000 chars)
     //   - createdAt: timestamp (required)
     //
+    //
+    // Collection: consultations (Ms Van English landing page)
+    //   - name: string (1-100), phone: string (9-20)
+    //   - role: 'parent' | 'student' | 'other'
+    //   - grade: string (optional, <=50), goal: string (optional, <=1000)
+    //   - createdAt: server timestamp
     // ===============================================================
 
     // ===============================================================
@@ -50,6 +56,21 @@ service cloud.firestore {
              data.createdAt is timestamp;
     }
 
+    function isValidConsultation(data) {
+      let requiredFields = ['name', 'phone', 'role', 'createdAt'];
+      let allowedFields = ['name', 'phone', 'role', 'grade', 'goal', 'createdAt'];
+      let roles = ['parent', 'student', 'other'];
+
+      return data.keys().hasAll(requiredFields) &&
+             data.keys().hasOnly(allowedFields) &&
+             data.name is string && data.name.size() >= 1 && data.name.size() <= 100 &&
+             data.phone is string && data.phone.size() >= 9 && data.phone.size() <= 20 &&
+             data.role in roles &&
+             (!('grade' in data) || (data.grade is string && data.grade.size() <= 50)) &&
+             (!('goal' in data) || (data.goal is string && data.goal.size() <= 1000)) &&
+             data.createdAt == request.time;
+    }
+
     // ===============================================================
     // Rules
     // ===============================================================
@@ -59,6 +80,12 @@ service cloud.firestore {
       allow create: if isValidRegistration(request.resource.data);
       
       // Only admins can read, update, or delete registrations
+      allow read, update, delete: if isAdmin();
+    }
+
+    // Ms Van English landing page: consultation requests
+    match /consultations/{consultationId} {
+      allow create: if isValidConsultation(request.resource.data);
       allow read, update, delete: if isAdmin();
     }
 

@@ -1,28 +1,51 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap');
 @import "tailwindcss";
 
+/* Brand tokens taken from msvanhomework.site */
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Montserrat", sans-serif;
-  --color-brand-dark: #0f172a;
-  --color-brand-primary: #1e293b;
-  --color-brand-accent: #f59e0b;
-  --color-brand-accent-hover: #d97706;
+  --font-sans: "Be Vietnam Pro", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Be Vietnam Pro", ui-sans-serif, system-ui, sans-serif;
+  --color-ink: #1c1b22;
+  --color-frame: #1c1b22;
+  --color-frame-2: #2a2933;
+  --color-lav: #c9c7f6;
+  --color-primary: #8f88ec;
+  --color-primary-ink: #2f27a8;
+  --color-primary-soft: #e8e6fc;
+  --color-link: #4b42c9;
+  --color-peach: #f6a46e;
+  --color-peach-soft: #fde6d6;
+  --color-peach-ink: #5a2a0c;
+  --color-surface: #f3f2f8;
+  --color-line: #e2e0ee;
+  --color-muted: #66657a;
 }
 
 @layer base {
+  html { scroll-behavior: smooth; }
+  section[id] { scroll-margin-top: 4rem; }
   body {
-    @apply font-sans text-slate-900 bg-white antialiased;
+    @apply font-sans text-ink bg-surface antialiased;
   }
   h1, h2, h3, h4 {
     @apply font-display tracking-tight;
+    text-wrap: balance;
+  }
+  :focus-visible {
+    outline: 3px solid var(--color-primary-ink);
+    outline-offset: 2px;
   }
 }
 
-.glass-card {
-  @apply bg-white/80 backdrop-blur-md border border-slate-200 shadow-sm;
+.section {
+  @apply py-16 md:py-24;
 }
 
-.section-padding {
-  @apply py-16 md:py-24;
+.card {
+  @apply bg-white rounded-3xl border border-line;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
 }
