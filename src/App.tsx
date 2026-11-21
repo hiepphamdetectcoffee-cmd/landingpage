@@ -21,6 +21,11 @@ import {
   Presentation,
   Quote,
   ShieldCheck,
+  Camera,
+  ScanFace,
+  Maximize,
+  AlertTriangle,
+  Timer,
   Smartphone,
   Sparkles,
   Users,
@@ -82,6 +87,7 @@ const fadeUp = {
 const NAV = [
   { href: '#video', label: 'Video' },
   { href: '#tinh-nang', label: 'Tính năng' },
+  { href: '#thi-that', label: 'Thi thật' },
   { href: '#lop-hoc', label: 'Lớp học' },
   { href: '#bat-dau', label: 'Cách bắt đầu' },
   { href: '#hoi-dap', label: 'Hỏi đáp' },
@@ -272,7 +278,7 @@ const Hero = () => (
         </h1>
         <p className="mt-6 max-w-xl text-lg text-ink/75">
           Không gian học tiếng Anh trực tuyến cho học sinh, phụ huynh và giáo viên: làm bài cô giao, luyện đề TOEIC, IELTS,
-          THPT, đọc truyện tranh có giọng đọc, chơi trò chơi từ vựng và luyện nói với AI. Phụ huynh theo dõi được kết quả của con
+          THPT, thi thật có giám thị AI, đọc truyện tranh có giọng đọc, chơi trò chơi từ vựng và luyện nói với AI. Phụ huynh theo dõi được kết quả của con
           mỗi ngày.
         </p>
         <div className="mt-8 flex flex-col gap-3 sm:flex-row">
@@ -319,7 +325,7 @@ const VideoSection = () => {
     <section id="video" className="section bg-frame text-white">
       <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
         <motion.div {...fadeUp} className="mb-10 text-center">
-          <Eyebrow dark>Video giới thiệu · 0:46</Eyebrow>
+          <Eyebrow dark>Video giới thiệu · 0:54</Eyebrow>
           <h2 className="mt-4 text-3xl font-extrabold md:text-5xl">Một vòng Ms Van English</h2>
           <p className="mx-auto mt-4 max-w-2xl text-white/70">
             Xem cách các con làm bài, luyện đề, luyện nói và cách phụ huynh, giáo viên đồng hành trên cùng một nền tảng.
@@ -349,7 +355,7 @@ const VideoSection = () => {
                 <span className="grid h-10 w-10 place-items-center rounded-full bg-peach-ink text-peach md:h-14 md:w-14">
                   <Play className="ml-0.5 h-5 w-5 fill-current md:h-6 md:w-6" />
                 </span>
-                Xem video · 0:46
+                Xem video · 0:54
               </span>
             </button>
           )}
@@ -368,7 +374,7 @@ const ROLES = [
     tag: 'HS',
     title: 'Học sinh',
     desc: 'Bài được giao, luyện TOEIC và IELTS, điểm danh và nhận xét của giáo viên.',
-    points: ['Làm bài cô giao mỗi tuần', 'Luyện đề trắc nghiệm có chấm điểm', 'Luyện nói với AI', 'Sổ từ của tôi'],
+    points: ['Làm bài cô giao mỗi tuần', 'Luyện đề trắc nghiệm có chấm điểm', 'Thi thật có giám thị AI', 'Luyện nói với AI'],
     href: LINKS.student,
     cta: 'Đăng nhập học sinh',
     tone: 'bg-primary-soft text-primary-ink',
@@ -386,7 +392,7 @@ const ROLES = [
     tag: 'GV',
     title: 'Giáo viên',
     desc: 'Giao bài, chấm bài, điểm danh, kết nối Zalo và quản lý lớp.',
-    points: ['Giao bài theo lớp', 'Chấm bài, nhận xét từng bạn', 'Điểm danh nhanh', 'Xem lịch sử luyện nói'],
+    points: ['Giao bài theo lớp', 'Chấm bài, nhận xét từng bạn', 'Bật thi thật cho đề, xem cảnh báo', 'Xem lịch sử luyện nói'],
     href: LINKS.teacher,
     cta: 'Không gian giáo viên',
     tone: 'bg-lav text-ink',
@@ -477,6 +483,131 @@ const FeaturesSection = () => (
             <p className="mt-2 text-sm text-muted">{f.desc}</p>
           </motion.div>
         ))}
+      </div>
+    </div>
+  </section>
+);
+
+// ---------------------------------------------------------------------------
+// Real exam (Thi thật) with AI proctor
+// ---------------------------------------------------------------------------
+
+const EXAM_RULES = [
+  { icon: Maximize, t: 'Thi toàn màn hình, không mở tab hay ứng dụng khác. Rời trang đến lần thứ 3 thì bài tự động nộp.' },
+  { icon: ScanFace, t: 'Giám thị AI theo dõi qua camera: không thấy mặt, có người khác, có điện thoại, nhìn ra ngoài lâu.' },
+  { icon: AlertTriangle, t: 'Mỗi lần có cảnh báo, hệ thống chụp 1 ảnh để cô giáo xem lại.' },
+  { icon: LineChart, t: 'Xem điểm ngay kèm mức tập trung. Cô giáo xem được các cảnh báo.' },
+];
+
+const MONITORS = ['Khuôn mặt', 'Hướng nhìn', 'Không có người khác', 'Không điện thoại', 'Toàn màn hình'];
+
+const ExamMockup = () => (
+  <div className="relative">
+    <div className="rounded-[2rem] bg-frame p-3 shadow-2xl ring-1 ring-white/10 sm:p-4">
+      <div className="flex items-center justify-between px-2 pb-3 text-sm font-bold text-white">
+        <span>
+          Đề TOEIC · <span className="text-[#ff8a80]">Thi thật</span>
+        </span>
+        <span className="flex items-center gap-2">
+          <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-[#ff5252]" /> Giám thị AI
+          <Timer className="ml-1 h-4 w-4" /> 44:12
+        </span>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-[1fr_11rem]">
+        <div className="rounded-2xl bg-white p-5 text-ink">
+          <p className="text-xs font-bold tracking-wider text-muted">CÂU 12 / 50</p>
+          <p className="mt-2 font-bold">The meeting has been ______ until next Monday.</p>
+          <div className="mt-4 grid gap-2 text-sm">
+            {['A. postpone', 'B. postponed', 'C. postponing', 'D. postpones'].map((o, i) => (
+              <div
+                key={o}
+                className={`rounded-xl border px-3 py-2 ${i === 1 ? 'border-primary bg-primary-soft font-bold' : 'border-line'}`}
+              >
+                {o}
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-1">
+          <div className="relative grid aspect-[4/3] place-items-center overflow-hidden rounded-2xl bg-gradient-to-br from-frame-2 to-black/40 sm:aspect-auto sm:h-32">
+            <Camera className="absolute left-2 top-2 h-4 w-4 text-white/50" />
+            <span className="grid h-16 w-14 place-items-center rounded-lg border-2 border-[#3ddc84]">
+              <ScanFace className="h-8 w-8 text-primary" />
+            </span>
+          </div>
+          <ul className="space-y-1.5 text-xs font-semibold text-white">
+            {MONITORS.map((m) => (
+              <li key={m} className="flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5">
+                <span className="h-2 w-2 rounded-full bg-[#3ddc84]" /> {m}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div className="mt-4 flex items-center gap-4 rounded-2xl bg-white p-4 text-ink shadow-xl sm:absolute sm:-bottom-14 sm:left-6 sm:mt-0">
+      <span className="text-3xl font-extrabold text-primary-ink">9,2</span>
+      <div>
+        <p className="text-xs font-semibold text-muted">Ví dụ kết quả · Giám thị AI đã ghi nhận</p>
+        <p className="font-bold">Tập trung 96% thời gian · 1 cảnh báo</p>
+      </div>
+    </div>
+  </div>
+);
+
+const ExamSection = () => (
+  <section id="thi-that" className="section bg-frame text-white">
+    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div className="grid items-center gap-14 lg:grid-cols-2">
+        <motion.div {...fadeUp}>
+          <span className="inline-flex items-center gap-2 rounded-full bg-[#fdecea] px-3 py-1 text-xs font-bold uppercase tracking-wider text-[#b42318]">
+            <span className="h-2 w-2 rounded-full bg-[#b42318]" /> Thi thật
+          </span>
+          <h2 className="mt-4 text-3xl font-extrabold md:text-5xl">Thi thật có giám thị AI, như trong phòng thi</h2>
+          <p className="mt-5 text-lg text-white/70">
+            Cô giáo bật thi thật cho từng đề. Các con làm bài lúc nào cũng được nhưng nghiêm túc như đi thi: không gợi ý AI,
+            không từ điển, có giám thị AI theo dõi qua camera.
+          </p>
+          <ul className="mt-8 space-y-4">
+            {EXAM_RULES.map(({ icon: Icon, t }) => (
+              <li key={t} className="flex gap-3">
+                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white/10">
+                  <Icon className="h-5 w-5 text-lav" />
+                </span>
+                <span className="pt-2 text-white/85">{t}</span>
+              </li>
+            ))}
+          </ul>
+        </motion.div>
+        <motion.div {...fadeUp}>
+          <ExamMockup />
+        </motion.div>
+      </div>
+
+      <div className="mt-20 grid gap-5 md:grid-cols-3">
+        <motion.div {...fadeUp} className="rounded-3xl bg-frame-2 p-6">
+          <h3 className="text-xl font-bold">Thi thử</h3>
+          <p className="mt-2 text-sm text-white/70">
+            Như bình thường: làm bất cứ lúc nào, có gợi ý AI và từ điển (nếu gói của bạn có), không cần camera.
+          </p>
+        </motion.div>
+        <motion.div {...fadeUp} className="rounded-3xl bg-lav p-6 text-ink">
+          <h3 className="text-xl font-bold">
+            Thi thật <span className="ml-1 rounded-full bg-white px-2 py-0.5 text-xs text-primary-ink">Có giám thị AI</span>
+          </h3>
+          <p className="mt-2 text-sm text-ink/75">
+            Thi toàn màn hình, không gợi ý AI và từ điển. Xem điểm ngay kèm mức tập trung. Cần máy tính có camera, dùng Chrome hoặc Edge.
+          </p>
+        </motion.div>
+        <motion.div {...fadeUp} className="rounded-3xl bg-frame-2 p-6">
+          <h3 className="flex items-center gap-2 text-xl font-bold">
+            <ShieldCheck className="h-5 w-5 text-lav" /> Riêng tư
+          </h3>
+          <p className="mt-2 text-sm text-white/70">
+            AI chạy ngay trên máy của con. Video và âm thanh không được gửi đi; chỉ ảnh lúc có cảnh báo được lưu, chỉ cô giáo
+            lớp con xem được và tự xoá sau 30 ngày.
+          </p>
+        </motion.div>
       </div>
     </div>
   </section>
@@ -622,6 +753,14 @@ const FAQS = [
   {
     q: 'Phụ huynh theo dõi con như thế nào?',
     a: 'Phụ huynh đăng nhập bằng tài khoản riêng để xem bài tập, kết quả, điểm danh và lộ trình học của con. Giáo viên có thể kết nối Zalo để thông tin đến nhanh hơn.',
+  },
+  {
+    q: 'Thi thật khác thi thử thế nào?',
+    a: 'Thi thử làm lúc nào cũng được, có gợi ý AI và từ điển (nếu gói có), không cần camera. Thi thật do cô bật cho từng đề: làm toàn màn hình, không gợi ý, không từ điển, có giám thị AI qua camera. Cần máy tính có camera, dùng Chrome hoặc Edge.',
+  },
+  {
+    q: 'Camera khi thi thật có ghi hình con không?',
+    a: 'AI chạy ngay trên máy của con, video và âm thanh không được gửi đi. Chỉ ảnh chụp lúc có cảnh báo được lưu, chỉ cô giáo lớp con xem được và tự xoá sau 30 ngày. Lần thi thật đầu tiên con (hoặc bố mẹ trong tài khoản phụ huynh) cần đồng ý dùng camera một lần.',
   },
   {
     q: 'Quên mật khẩu thì làm sao?',
@@ -867,6 +1006,7 @@ export default function App() {
         <VideoSection />
         <RolesSection />
         <FeaturesSection />
+        <ExamSection />
         <ClassroomSection />
         <StepsSection />
         <TestimonialsSection />

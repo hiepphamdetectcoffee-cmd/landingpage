@@ -9,7 +9,7 @@ from pathlib import Path
 import numpy as np
 
 SR = 44100
-DUR = 46.5
+DUR = 53.5
 BPM = 96
 BEAT = 60 / BPM
 BAR = BEAT * 4
